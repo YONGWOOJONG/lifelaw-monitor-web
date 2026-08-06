@@ -279,8 +279,14 @@ V-09·V-10은 `information_schema.column_privileges` / `table_privileges`로
 | **파티션이 CHECK 제약을 복제한다** | `conname`만으로 세면 부풀려진다. `ck_h_crawl_target_diag`는 부모 1 + 파티션 3 = 4행으로 잡혔다. 반드시 `conrelid`를 함께 지정한다 |
 | **테이블 소유자는 컬럼 단위 GRANT를 우회한다** | 수집기 소유 테이블을 Web 롤이 소유하면 §2.9 통제가 전부 무효가 된다. 소유자가 Web 롤이 **아님**을 검증 항목에 포함한다 |
 | **권한 거부 판정을 메시지 문자열로 하지 않는다** | PostgreSQL 오류 메시지는 로케일에 따라 달라진다(한국어는 "접근 권한 없음"). 종료 코드나 `SQLSTATE 42501`로 판정한다 |
+| **계산 컬럼은 권한이 아니라 DDL이 막는다** | `effective_collect_policy_cd`·`execution_collect_policy_cd` 쓰기는 `SQLSTATE 42501`이 아니라 **`428C9`(`GeneratedAlways`)** 로 거부된다. PostgreSQL이 컬럼 권한 검사보다 **먼저** 파싱 단계에서 거부하기 때문이다. 방어선이 두 겹(GENERATED + GRANT 미부여)이라는 뜻이며, 테스트에서 SQLSTATE를 42501로 기대하면 실패한다 |
+| **`SET TIME ZONE`은 파라미터 바인딩을 받지 않는다** | 세션 타임존은 SQL 문이 아니라 **연결 옵션**(`options="-c timezone=Asia/Seoul"`)으로 고정한다. SQL 문으로 처리하면 문자열 조립이 필요해져 툴체인 §3의 바인딩 규칙과 어긋난다 |
 
-실행 도구: `scripts/db/verify/contract_checks.sql`
+실행 도구:
+
+- `scripts/db/verify/contract_checks.sql` — 운영자용 psql 점검
+- `python -m lifelaw_web.db` — 애플리케이션 기동 시와 동일한 검증 CLI
+- `pytest tests/integration/test_schema_check.py` — 통과·실패 양방향 검증
 
 참조 저장소에도 동등한 `validate_schema()` 절차가 있으므로 같은 엄격도를 유지한다.
 
