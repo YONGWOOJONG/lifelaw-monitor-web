@@ -182,13 +182,23 @@ LIFELAW_WEB_SESSION_SECRET
 
 ## 7. DB 계정과 권한 — 컬럼 단위 GRANT
 
-AGENTS.md §7은 DB 소유자 계정 재사용을 금지한다. 3개 롤로 분리한다.
+AGENTS.md §7은 DB 소유자 계정 재사용을 금지한다. 롤을 분리한다.
 
-| 롤 | 용도 | 권한 |
-|---|---|---|
-| `postgres` | 인스턴스 소유자 | 롤·DB 생성에만 사용. 애플리케이션·마이그레이션에서 사용 금지 |
-| `lifelaw_web_migrator` | `TW_` DDL 적용 | `TW_` 테이블 생성·변경. 수집기 테이블 DDL 권한 없음 |
-| `lifelaw_web_app` | 런타임 | 아래 최소 권한 |
+| 롤 | LOGIN | 용도 | 권한 |
+|---|---|---|---|
+| `postgres` | 예 | 인스턴스 소유자 | 롤·DB 생성, GRANT 적용에만 사용. 애플리케이션에서 사용 금지 |
+| `lifelaw_collector_owner` | **아니오** | 수집기 소유 테이블(`TC_`/`TN_`/`TH_`)의 소유자 | 소유권 경계 표현 전용. 접속 주체가 아니다 |
+| `lifelaw_web_migrator` | 예 | `TW_` DDL 적용 | `TW_` 테이블 생성·변경. 수집기 테이블 DDL 권한 없음 |
+| `lifelaw_web_app` | 예 | 런타임 | 아래 최소 권한 |
+
+> **`lifelaw_collector_owner`를 분리하는 이유(실측에서 발견).**
+> **PostgreSQL 테이블 소유자는 컬럼 단위 GRANT를 우회한다.** 개발 DB에 C 스키마를
+> `lifelaw_web_migrator`로 적용했더니 그 롤이 수집기 테이블의 소유자가 되어,
+> 아래 컬럼 단위 통제가 무의미해질 수 있는 상태가 됐다. 소유권을 로그인 불가
+> 롤로 옮겨 해소했다.
+>
+> 운영에서는 이 롤이 실제 수집기 배포 계정에 대응한다. **Web 쪽 어떤 롤도
+> 수집기 테이블을 소유하지 않는다**는 것이 불변식이다.
 
 `lifelaw_web_app` 권한 설계:
 
