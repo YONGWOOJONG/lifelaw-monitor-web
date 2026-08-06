@@ -6,11 +6,15 @@
 
 ## ⚠️ 현재 상태
 
-**이 디렉터리의 모든 문서는 `PROPOSAL`이며 구현 권위가 아니다.**
+**활성 설계 문서는 v1.0 `APPROVED`이며, 구현 권위는 승인된 항목으로 한정된다.**
 
-사용자 명시 승인 전까지 아래 문서를 근거로 코드, 스키마, 권한, 저장소 간
-계약을 확정하지 않는다. 승인 전 상태에서 문서 내용을 "확정 사항"으로 인용하는
-것도 금지한다.
+2026-08-06 사용자 승인으로 A-01(문서 승격), A-02(FastAPI + React/Vite),
+A-04(서버 측 세션 인증)가 확정됐다. 나머지 A-03·A-05~A-09는 **미승인**이며,
+해당 범위(Web 소유 `TW_*` 테이블, 역할·권한 목록, 행위자 귀속 방식, 명령 Inbox
+소비자, 아티팩트 열람 정책, 명명 규칙)는 여전히 제안 상태다.
+
+승인 상태의 **단일 출처**는 설계 문서 §23.1 표다. 본문 다른 절과 충돌하면
+그 표가 우선한다.
 
 현재 승인된 ADR은 **없다.** 문서 안의 ADR 후보 번호는 임시 라벨이며 최종 번호를
 선점하지 않는다.
@@ -19,7 +23,8 @@
 
 | 문서 | 상태 | 권위 | 내용 |
 |---|---|---|---|
-| [DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md) | `PROPOSAL` | `ADVISORY` (`Implementation-Authority=false`) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 감사, 단계별 구현 계획 |
+| [DESIGN_..._v1_0.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md) | **`APPROVED`** (활성) | `IMPLEMENTATION` (`Implementation-Authority=true`, 승인 항목 한정) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 세션 인증, 감사, 단계별 구현 계획 |
+| [DESIGN_..._v0_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md) | `SUPERSEDED` | `ADVISORY` (`Implementation-Authority=false`) | 승인 이전 제안 상태 보존용 기록. 인용·구현 근거로 사용하지 않는다 |
 
 ## 권위 순서
 
@@ -32,20 +37,34 @@
 4. 승인된 데이터베이스 계약
 5. 승인된 보안·RBAC 계약
 6. 승인된 컴포넌트 명세
-7. DESIGN, RESEARCH, PROMPT 문서   ← 현재 문서는 여기
+7. DESIGN, RESEARCH, PROMPT 문서
 8. 과거·보관 문서
 ```
 
+승인된 항목(A-01·A-02·A-04)에 대해서는 v1.0이 1순위(사용자 명시 승인)의
+기록물로 작동하고, 미승인 항목은 7순위에 머문다.
+
 ## 다음 승인 대기 항목
 
-설계 문서 §23에 승인 필요 사항 9건(A-01 ~ A-09)이 정리되어 있다. 주요 항목은
-다음과 같다.
+설계 문서 §23.1에 A-01 ~ A-09가 정리되어 있다. 현재 미승인 6건.
 
-- 이 설계 문서의 승인 상태 승격
-- FastAPI + React/Vite 스택 확정
-- Web 소유 테이블 신설 (인증·RBAC·감사·명령 원장)
-- 인증 방식 결정
-- 대상 정책 변경의 행위자 귀속 방식 결정
+| # | 항목 | 막고 있는 것 |
+|---|---|---|
+| A-03 | Web 소유 테이블(`TW_*`) 신설 | 2단계 전체 (인증·RBAC·감사). 세션 저장 매체도 여기 종속 |
+| A-05 | 역할·권한 목록 확정 | 2단계 |
+| A-06 | 대상 정책 변경의 행위자 귀속 1안/2안 | DB 단독 감사 가능 여부 |
+| A-07 | 명령 Inbox 소비자 구현 주체 | 7단계 (수집기 저장소 변경 수반) |
+| A-08 | 아티팩트 열람 범위·원문 노출 정책 | 열람 화면 |
+| A-09 | 테이블 접두사·명명 규칙 | 스키마 확정 |
+
+**지금 착수 가능한 것은 1단계**(DB 계약 문서 고정 + 스키마 fail-closed 검증
+모듈)뿐이다. 어느 미승인 항목에도 종속되지 않는다.
+
+## 원격 저장소
+
+사용자 결정(2026-08-06)으로 **원격 저장소 작업은 전면 보류**다. 저장소 생성,
+remote 추가, push, 원격 default branch 설정, branch protection을 수행하지
+않는다. 로컬 기본 checkout은 `feature`다.
 
 ## 참조 저장소
 

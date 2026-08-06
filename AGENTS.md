@@ -16,9 +16,18 @@
   - `lifelaw-monitor-web` — 인증, RBAC, 조회, 정책 관리, 실행 제어 **요청**,
     승인, 감사
 
-상세 설계는 이 파일에 중복해서 적지 않는다.
-`docs/architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md`를
-참조한다. 단, 해당 문서는 현재 `PROPOSAL`이며 구현 권위가 아니다.
+상세 설계는 이 파일에 중복해서 적지 않는다. 활성 설계 문서는
+`docs/architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md`
+(v1.0, `APPROVED`)이며, **구현 권위는 승인된 항목으로 한정된다.** 승인 상태의
+단일 출처는 해당 문서 §23.1 표다. v0.1은 `SUPERSEDED`이며 인용하지 않는다.
+
+확정된 스택과 인증 방식은 다음과 같다(2026-08-06 사용자 승인).
+
+- 백엔드 **FastAPI(Python)** — 정책 변경 로직을 수집기와 공유 라이브러리로
+  재사용하기 위한 전제이므로 언어를 바꾸지 않는다(설계 §2.1)
+- 프론트엔드 **React/TypeScript(Vite)**
+- 인증 **서버 측 세션 + 쿠키.** 동일 출처 배포, CORS 기본 비활성, CSRF 토큰
+  검증, 권한은 매 요청 서버 재조회(설계 §17.4)
 
 ## 2. 사용자 응답 언어
 
