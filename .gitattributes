@@ -1,0 +1,6 @@
+# 줄바꿈 정규화
+#
+# 저장소에 저장되는 blob은 LF로 정규화하고, 작업 사본도 LF로 체크아웃한다.
+# Windows·Linux 혼재 환경에서 core.autocrlf 값에 따라 diff 잡음이 생기는 것을
+# 막기 위해 저장소 차원에서 고정한다. 바이너리는 git이 자동 판별해 제외한다.
+* text=auto eol=lf
