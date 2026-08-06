@@ -1,0 +1,46 @@
+# ── 비밀정보 (AGENTS.md §7 — 자격증명을 Git에 저장하지 않는다) ────────────
+.env
+.env.*
+!.env.example
+config/*.json
+!config/*.example.json
+*.pem
+*.key
+*.pfx
+secrets/
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+*.tsbuildinfo
+
+# ── 로컬 산출물 ───────────────────────────────────────────────────────────
+artifacts/
+logs/
+*.log
+
+# ── 에디터 / OS ───────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+Thumbs.db
+desktop.ini

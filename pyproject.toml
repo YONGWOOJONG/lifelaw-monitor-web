@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lifelaw-monitor-web"
+version = "0.1.0"
+description = "Admin web backend for lifelaw content monitoring (FastAPI)"
+requires-python = ">=3.12"
+
+# 정확한 버전 고정. 참조 저장소(lifelaw-monitor)의 핀 방식을 따른다.
+# 아래 버전은 2026-08-06 PyPI 조회로 실재를 확인한 값이다(추측 핀 금지).
+# psycopg는 참조 저장소와 동일 핀(3.3.4)을 유지해 DB 동작을 일치시킨다.
+dependencies = [
+  "fastapi==0.141.1",
+  "uvicorn[standard]==0.52.1",
+  "psycopg[binary,pool]==3.3.4",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.14.2",
+  "argon2-cffi==25.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "httpx==0.28.1",
+  "ruff==0.16.1",
+  "mypy==2.3.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "A", "C4", "SIM", "RUF"]
+# S608 (SQL 문자열 구성)은 무시하지 않는다. ORM 없이 SQL을 직접 쓰므로
+# 파라미터 바인딩 누락을 잡아내는 것이 이 프로젝트에서는 특히 중요하다.
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert 허용
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: 실제 PostgreSQL 연결이 필요한 테스트",
+]
