@@ -171,17 +171,19 @@ ROLLBACK). `batch_ymd='20260515'`는 파티션 부재로 거부됨 — 기대 �
 
 ## 4. 현재 데이터 상태
 
-모든 업무 테이블은 **비어 있다.** 수집기가 아직 실행되지 않았고, 이 저장소는
-수집 데이터를 만들지 않는다.
+**수집기 소유 업무 테이블은 전부 비어 있다.** 수집기가 아직 실행되지 않았고,
+이 저장소는 수집 데이터를 만들지 않는다.
 
-| 테이블 | 행수 |
-|---|---|
-| `TC_COMMON_CODE` | 34 (DDL seed) |
-| `TW_ROLE` / `TW_PERMISSION` / `TW_ROLE_PERMISSION` | 6 / 14 / 35 (마이그레이션 seed) |
-| 그 외 전부 | 0 |
+| 테이블 | 행수 | 출처 |
+|---|---|---|
+| `TC_COMMON_CODE` | 34 | DDL seed |
+| `TW_ROLE` / `TW_PERMISSION` / `TW_ROLE_PERMISSION` | 6 / 14 / 35 | 마이그레이션 0001 seed |
+| `TW_USER` / `TW_USER_ROLE` | 1 / 1 | 부트스트랩 (§8) |
+| `TW_AUDIT_LOG` | 1 | 부트스트랩 감사 기록 |
+| `TN_*` / `TH_*` / `TW_SESSION` / `TW_ADMIN_COMMAND` / `TW_APPROVAL` | 0 | — |
 
-**관리자 계정이 없다.** 로그인 화면(S-01)을 만들기 전에 최초 `ADMIN` 계정
-생성 절차가 필요하다(§6 미결).
+수집 데이터가 없으므로 조회 화면(S-04 등)은 **빈 목록**을 그린다. 화면 개발과
+성능 검증에는 수집기 실행 또는 별도 시드 데이터가 필요하다(§6 RB-6).
 
 ---
 
@@ -203,11 +205,13 @@ DROP ROLE lifelaw_collector_owner;
 
 | # | 항목 |
 |---|---|
-| RB-1 | 최초 `ADMIN` 계정 생성 방법 — CLI 스크립트 / 마이그레이션 seed / 최초 기동 시 부트스트랩 중 선택 |
+| RB-1 | ~~최초 `ADMIN` 계정 생성 방법~~ **해소** — CLI 스크립트 방식 확정. §8 참조 |
 | RB-2 | `command:resync` 를 어느 역할에 부여할지. 설계에 대응 화면이 없어 현재 미부여 |
 | RB-3 | `artifact:read` 는 A-08 미승인이라 미부여. 승인 시 부여 대상 결정 |
 | RB-4 | 세션 유휴 30분 / 절대 12시간은 제안값. 운영 확정 필요 |
 | RB-5 | 월 파티션 자동 생성 방식(수동 스크립트 유지 vs 배치) |
+| RB-6 | 조회 화면 개발·성능 검증용 데이터 확보 방법 — 수집기 실행 vs 개발 전용 시드. 시드를 만들면 `TN_`/`TH_` 에 쓰기가 필요해 Web 롤 권한으로는 불가하며, 별도 도구가 된다 |
+| RB-7 | 첫 로그인 시 비밀번호 변경 강제 기능 (현재 스키마에 없음. 마이그레이션 0002 대상) |
 
 ---
 
@@ -223,3 +227,70 @@ DROP ROLE lifelaw_collector_owner;
 | 4 | 공통 코드가 계약 문서의 33건이 아니라 **34건**이었다 | 계약 §2.6·V-05를 34로 정정 |
 | 5 | 자격증명 임시 파일을 저장소 안에 만들어 `.gitignore`에 걸리지 않았다 | 즉시 저장소 밖 스크래치패드로 이동. 저장소에 미추적 비밀 파일 0건 확인 |
 | 6 | `psql -c` 에서 `:'var'` 보간이 동작하지 않아 원장 INSERT가 실패했다 | stdin 방식으로 교체. §2.7에 명시 |
+
+---
+
+## 8. Python 환경과 최초 ADMIN 계정 (RB-1 해소)
+
+### 8.1 가상환경
+
+```bash
+python -m venv .venv                       # Python 3.12.10
+.venv/Scripts/python.exe -m pip install -e ".[dev]"
+```
+
+`.venv/`는 `.gitignore` 대상이다. 설치 결과가 `pyproject.toml`의 핀과 일치하는지
+확인한다(2026-08-06 실측: 11개 전부 일치).
+
+### 8.2 로컬 설정 파일
+
+`config/web.json`을 `config/web.example.json`에서 복사해 만든다. Git 제외 대상이며
+**`user`/`password`/`secret` 키를 넣지 않는다.** 자격증명은 `.env`로 주입한다.
+
+### 8.3 최초 ADMIN 계정 생성
+
+```bash
+set -a; . ./.env; set +a
+export LIFELAW_WEB_BOOTSTRAP_PASSWORD='<비밀번호>'
+.venv/Scripts/python.exe scripts/db/bootstrap_admin.py \
+    --login-id admin --user-nm "시스템관리자"
+```
+
+설계상 성질:
+
+- **create-only.** `TW_USER`에 행이 하나라도 있으면 거부한다. 기존 계정의
+  비밀번호 재설정 도구가 아니다
+- 비밀번호를 인자나 파일로 받지 않는다. **환경변수만** 사용하고, 누락 시
+  기동을 실패시킨다
+- 해시는 **Argon2id / RFC 9106 low-memory**(`m=65536, t=3, p=4`). 저장 직후
+  같은 원문으로 검증까지 수행한다
+- 런타임 롤(`lifelaw_web_app`) 권한만으로 동작한다. 소유자 계정을 쓰지 않는다
+- 세션 타임존을 `Asia/Seoul`로 고정해 서버 기본값에 의존하지 않는다(D-26)
+- 감사 로그에 `BOOTSTRAP_ADMIN` 1건을 남기며, **비밀번호와 해시는 기록하지 않는다**
+
+### 8.4 실측 결과 (2026-08-06)
+
+| 검증 | 결과 |
+|---|---|
+| 계정 생성 | `user_id=1`, `login_id=admin`, `use_yn=Y`, `reger=bootstrap` |
+| 역할 | `ADMIN` |
+| 해시 | `$argon2id$v=19$m=65536,t=3,p=4…` 길이 97 |
+| 유효 권한 | `target:read`, `target:history:read`, `batch:read`, `policy:read`, `user:manage` |
+| **비누적 확인** | `command:approve` **미포함** — 4-eyes 유지 |
+| 비밀번호 왕복 | 올바른 값 검증 성공 / 틀린 값 정상 거부 |
+| 감사 로그 | 1건. 비밀번호 원문·해시 문자열 포함 0건 |
+| create-only | 재실행 시 exit=2로 거부, 계정 1건 유지 |
+| 정적 검사 | `ruff` 통과, `mypy --strict` 통과 |
+
+### 8.5 이 계정의 위험
+
+이 계정에 설정한 개발용 비밀번호는 **약하고 로컬 개발 DB 전용**이다. 값은 이
+문서에 적지 않는다(AGENTS.md §7). 계정은 `user:manage`를 가지며 §18 최고 위험
+작업의 재인증 근거가 되므로, 공유 환경·운영에서는
+
+1. 비밀번호를 재발급하고
+2. `.env`를 배포 secret으로 대체하고
+3. 이 부트스트랩 계정을 사용 중지(`use_yn='N'`)하고 개인 계정으로 전환한다
+
+비밀번호 변경 강제(첫 로그인 시 재설정) 기능은 현재 스키마에 없다. 필요하면
+마이그레이션 0002 대상이다.
