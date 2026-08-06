@@ -24,6 +24,7 @@ A-04(서버 측 세션 인증)가 확정됐다. 나머지 A-03·A-05~A-09는 **�
 | 문서 | 상태 | 권위 | 내용 |
 |---|---|---|---|
 | [DESIGN_..._v1_0.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md) | **`APPROVED`** (활성) | `IMPLEMENTATION` (`Implementation-Authority=true`, 승인 항목 한정) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 세션 인증, 감사, 단계별 구현 계획 |
+| [DESIGN_admin_screen_inventory_v0_1.md](architecture/designs/DESIGN_admin_screen_inventory_v0_1.md) | `PROPOSAL` | `ADVISORY` (`Implementation-Authority=false`) | 관리자 화면 목록(G-2) 21개 — 화면별 데이터 소스·권한·위험 등급·종속 승인, 화면-권한 매트릭스, 제공하지 않는 화면 금지 목록 |
 | [DESIGN_..._v0_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md) | `SUPERSEDED` | `ADVISORY` (`Implementation-Authority=false`) | 승인 이전 제안 상태 보존용 기록. 인용·구현 근거로 사용하지 않는다 |
 
 ## 권위 순서
