@@ -6,7 +6,7 @@
 
 ## ⚠️ 현재 상태
 
-**활성 설계 문서는 v1.1 `APPROVED`이며, 구현 권위는 승인된 항목으로 한정된다.**
+**활성 설계 문서는 v1.2 `APPROVED`이며, 구현 권위는 승인된 항목으로 한정된다.**
 
 2026-08-06 사용자 승인으로 **A-01·A-02·A-03·A-04·A-05·A-09** 6건이 확정됐다.
 스택(FastAPI + React/Vite), 인증(서버 측 세션), Web 소유 `TW_` 테이블 7종,
@@ -26,7 +26,7 @@
 
 | 문서 | 상태 | 권위 | 내용 |
 |---|---|---|---|
-| [DESIGN_..._v1_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md) | **`APPROVED`** (활성) | `IMPLEMENTATION` (`Implementation-Authority=true`, 승인 항목 한정) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 세션 인증, 감사, 단계별 구현 계획 |
+| [DESIGN_..._v1_2.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md) | **`APPROVED`** (활성) | `IMPLEMENTATION` (`Implementation-Authority=true`, 승인 항목 한정) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 세션 인증, 감사, 단계별 구현 계획 |
 | [DESIGN_admin_screen_inventory_v0_1.md](architecture/designs/DESIGN_admin_screen_inventory_v0_1.md) | `PROPOSAL` | `ADVISORY` (`Implementation-Authority=false`) | 관리자 화면 목록(G-2) 21개 — 화면별 데이터 소스·권한·위험 등급·종속 승인, 화면-권한 매트릭스, 제공하지 않는 화면 금지 목록 |
 | [contracts/db-contract.md](contracts/db-contract.md) | `PROPOSAL` | `ADVISORY` (`Implementation-Authority=false`) | 저장소 간 DB 계약(G-1) — 계약 버전 핀, DDL 실측 스키마 사실, 쓰기 allowlist, 금지 컬럼, fail-closed 기동 검증 12항목 |
 | [DESIGN_project_structure_and_toolchain_v0_1.md](architecture/designs/DESIGN_project_structure_and_toolchain_v0_1.md) | `PROPOSAL` | `ADVISORY` (`Implementation-Authority=false`) | 프로젝트 구조·툴체인(G-4) — 디렉터리 레이아웃, ORM 배제 근거, 의존성 핀, 설정·secret 계약, DB 롤과 컬럼 단위 GRANT, 마이그레이션 방식 |

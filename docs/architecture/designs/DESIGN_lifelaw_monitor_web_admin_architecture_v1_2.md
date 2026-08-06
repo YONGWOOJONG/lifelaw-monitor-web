@@ -1,27 +1,22 @@
 ---
 Document-ID: DESIGN-LIFELAW-MONITOR-WEB-ADMIN
-Version: 1.1
-Status: SUPERSEDED
-Authority: ADVISORY
-Implementation-Authority: false
+Version: 1.2
+Status: APPROVED
+Authority: IMPLEMENTATION
+Implementation-Authority: true
 Owner: User
-Supersedes: DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md (v1.0)
-Superseded-By: DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md (v1.2)
-Superseded-At: 2026-08-06 (Asia/Seoul)
+Supersedes: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1)
+Approved-By: User
+Approved-At: 2026-08-06 (Asia/Seoul)
+Approved-Items: A-01, A-02, A-03, A-04, A-05, A-09
+Pending-Items: A-06, A-07, A-08
+Change-Type: CORRECTION (C-1 컬럼 소유권 드리프트 정정)
 ---
 
-# 생활법령 모니터링 관리자 Web 아키텍처 설계 — v1.1 (SUPERSEDED)
+# 생활법령 모니터링 관리자 Web 아키텍처 설계 — v1.2
 
-> **이 문서는 `SUPERSEDED`이며 구현 권위가 아니다.**
-> 후계 활성본은
-> [`DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md`](DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md)
-> (v1.2, `APPROVED`)이다.
->
-> **이 판의 §7.1 금지 컬럼 목록에는 오류가 있다** — `run_collect_policy_cd` 등
-> 5개가 누락되어 있다. v1.2에서 정정했다. **이 파일의 §7.1을 구현 근거로
-> 사용하지 않는다.**
->
-> 아래 본문은 승격 시점에 동결되었다. 이후 변경은 v1.2에만 반영한다.
+> **이 문서는 `APPROVED`이며 구현 권위를 가진다. 단 권위는 승인된 항목으로
+> 한정된다.**
 >
 > - **승인 완료(구현 권위 있음)** — A-01 문서 승격, A-02 스택 확정
 >   (FastAPI + React/Vite), A-03 Web 소유 테이블 신설, A-04 인증 방식 확정
@@ -37,6 +32,11 @@ Superseded-At: 2026-08-06 (Asia/Seoul)
 > 우선한다.
 >
 > 문서 안의 ADR 후보 번호는 모두 임시 라벨이며 최종 번호를 선점하지 않는다.
+>
+> **v1.2는 정정 개정이다(C-1).** 승인 항목은 v1.1과 동일하고, §7.1의 컬럼
+> 소유권 목록을 DDL 재판독 결과로 보강했다. 컬럼 단위 계약의 단일 출처는
+> `docs/contracts/db-contract.md`이며, 이 문서는 그 요약이다. 충돌 시
+> **DDL을 직접 판독한 계약 문서가 우선한다.**
 >
 > **참조 저장소:** `lifelaw-monitor`의 활성 공개 문서를 읽기 전용으로 참조했다.
 > 참조 시점의 활성 버전은 D1 v1.24 / G1 v3.14 / C1 v2.20 / R1 v1.13 /
@@ -205,15 +205,61 @@ Web이 수집기를 HTTP로 호출하거나 그 반대 방향의 동기 호출�
 (`target_collect_policy_cd`, `collect_target_kind_cd`, `target_policy_version`)
 뿐이며, 그것도 직접 UPDATE가 아니라 §10 명령을 통한다.
 
-**절대 쓰지 않는 컬럼:** `crawl_stat_cd`, `extract_stat_cd`, `norm_stat_cd`,
-`cmpr_stat_cd`, `change_yn_cd`, `raw_html_hash`, `norm_html_hash`,
-`prev_raw_hash`, `prev_norm_hash`, `crawl_diag_cd`, `crawl_candidate_url`,
-`batch_ymd`, `file_*`.
+**절대 쓰지 않는 컬럼** (v1.2에서 DDL 재판독으로 보강. 와일드카드 표기를 없애고
+실제 컬럼명으로 전부 열거한다)
+
+```text
+실행 상태   crawl_stat_cd  extract_stat_cd  norm_stat_cd  cmpr_stat_cd
+            change_yn_cd
+오류        crawl_err_msg  extract_err_msg  norm_err_msg  cmpr_err_msg
+            change_err_msg
+해시        raw_html_hash  norm_html_hash  prev_raw_hash  prev_norm_hash
+진단        crawl_diag_cd  crawl_diag_msg  crawl_candidate_url
+파일        file_size  file_mtime  file_format_cd
+방법        extract_method_cd
+일자        batch_ymd
+실행 제외   run_collect_policy_cd
+            run_exclusion_site_policy_id
+            run_exclusion_site_policy_version
+사이트 상속 site_policy_id  site_collect_policy_cd  site_policy_version
+계산        effective_collect_policy_cd  execution_collect_policy_cd
+```
+
+> **v1.1 대비 정정 (C-1).** v1.1은 `run_collect_policy_cd`,
+> `run_exclusion_site_policy_id`, `run_exclusion_site_policy_version`,
+> `file_format_cd`, `extract_method_cd` **5개를 누락**했고, `file_*`이라는
+> 와일드카드 표기를 써서 `file_format_cd`가 목록에 드는지 모호했다.
+> DDL 판독 결과 5개 모두 수집기 소유다.
+>
+> - `run_*` 3개 — D-28 redirect 실행 제외 영속성. **DDL `ck_crawl_target_run_exclusion`이
+>   3개를 all-or-none으로 묶고 있어 부분 수정은 제약 위반이 된다**
+> - `extract_method_cd` — 본문 추출 방법 코드(F4/D-31 소유)
+> - `file_format_cd` — 수집 파일 형식 코드
+>
+> 완전한 컬럼 단위 계약은 `docs/contracts/db-contract.md` §2.8·§2.9다.
 
 **계산 컬럼:** `effective_collect_policy_cd`와 `execution_collect_policy_cd`는
-DDL에서 `GENERATED ALWAYS AS ... STORED`다. Web은 **읽기만** 하고 값을 계산해
-비교하거나 저장하지 않는다. 프론트엔드에서 OR 규칙을 재구현하면 드리프트가
-생긴다.
+`TN_CRAWL_TARGET`에서 `GENERATED ALWAYS AS ... STORED`다. Web은 **읽기만** 하고
+값을 계산해 비교하거나 저장하지 않는다. 프론트엔드에서 OR 규칙을 재구현하면
+드리프트가 생긴다.
+
+**두 계산 컬럼의 차이는 `run_collect_policy_cd` 항 하나다.**
+
+```text
+effective = site OR target                         (구성 정책)
+execution = site OR target OR run                  (실행 시점 제외 반영)
+```
+
+화면에서 두 값을 혼용하면 "제외인데 제외가 아닌" 표시가 나온다. 실행 결과를
+설명할 때는 `execution`, 관리자가 설정한 값을 설명할 때는 `effective`를 쓴다.
+
+`TH_CRAWL_TARGET`에서는 **같은 두 컬럼이 GENERATED가 아니다.** 일반 `NOT NULL`
+컬럼이고 동일 수식을 `CHECK` 제약으로 강제한다. 읽기 전용 규칙은 동일하다.
+
+**진단 컬럼의 결합 범위:** `ck_crawl_target_diag`는 진단 3컬럼 all-or-none에
+그치지 않고 `crawl_stat_cd='1090'`·`change_yn_cd='5000'`·
+`crawl_candidate_url LIKE 'https://%'`까지 **5개 조건을 함께 묶는다.** §13
+reset bundle 설계의 전제다.
 
 ### 7.2 Web 소유 테이블 (A-03·A-09 승인, 2026-08-06)
 
@@ -761,6 +807,21 @@ A-03·A-05·A-09 승인을 반영하며 점검했다.
 | A-06 미승인 상태에서 감사 구현이 막히는가 | 통과 | 1안이 기본 동작임을 배너에 명시. `TW_AUDIT_LOG`만으로 성립하므로 2단계 진행 가능 |
 | `TW_SESSION`이 A-04와 정합하는가 | **수정함** | v1.0은 "토큰 방식 채택 시 불요"로 적혀 있었다. A-04가 세션으로 확정됐으므로 §7.2에서 **필수**로 정정 |
 
+### 24.6 v1.2 정정 개정 SELF-REFINE (2026-08-06)
+
+C-1 드리프트 정정. **이 드리프트는 설계 문서를 읽는 것만으로는 발견되지 않았고,
+DDL 파일을 직접 판독해서 나왔다.**
+
+| 공격 질문 | 판정 | 대응 |
+|---|---|---|
+| 금지 컬럼 목록이 실제 스키마와 일치하는가 | **불일치 5건** | `run_collect_policy_cd`·`run_exclusion_site_policy_id`·`run_exclusion_site_policy_version`·`file_format_cd`·`extract_method_cd` 누락. §7.1에 전량 열거로 교체 |
+| `file_*` 같은 와일드카드 표기가 안전한가 | **아니다** | `file_format_cd`가 목록에 드는지 모호했다. 와일드카드를 없애고 실제 컬럼명만 쓴다 |
+| 계산 컬럼 2개를 같은 것으로 설명했는가 | **수정함** | 차이가 `run` 항 하나임을 명시하고, 화면에서의 사용 구분(`effective` = 설정값, `execution` = 실행 결과)을 추가 |
+| TH의 계산 컬럼을 TN과 동일하게 서술했는가 | **수정함** | TH는 GENERATED가 아니라 CHECK 강제다. §7.1에 구분 추가 |
+| 진단 컬럼 결합 범위를 3개로 축소 서술했는가 | **수정함** | 실제 5개 조건. §7.1에 정정하고 §13 reset bundle의 전제임을 명시 |
+| 설계 문서와 계약 문서가 또 갈라질 수 있는가 | **구조로 대응** | 배너에 "컬럼 단위 계약의 단일 출처는 db-contract.md, 충돌 시 계약 문서 우선"을 명시. 요약본이 권위를 주장하지 않게 만든다 |
+| 같은 종류의 드리프트가 다른 절에도 있는가 | **잔여 위험** | §9 명령 스키마, §17.2 권한, §19.1 감사 항목은 아직 물리 스키마가 없어 대조 불가. `TW_` DDL 작성 시 같은 방식으로 재검증한다 → R-13 |
+
 ## 25. 잔여 위험
 
 | # | 위험 | 등급 | 완화 | 잔여 |
@@ -776,6 +837,7 @@ A-03·A-05·A-09 승인을 반영하며 점검했다.
 | R-09 | ~~인증 방식 미확정~~ | — | **해소** — A-04 승인(서버 측 세션, §17.4) | 세션 저장 매체는 A-03에 종속 |
 | R-10 | ~~Web 소유 테이블 미승인(A-03)~~ | — | **해소** — A-03 승인(§7.2) | 참조 저장소 D-26 기록과의 불일치는 남음 |
 | R-12 | `TW_` 테이블이 수집기와 같은 DB에 공존해 스키마 소유 경계가 흐려질 수 있음 | 중간 | §7.2 소유 경계 불변식, 접두사 분리, 런타임 계정 권한 분리 | 운영 중 실수로 인한 교차 쓰기는 DB 권한으로만 차단 |
+| R-13 | **설계 요약과 물리 스키마의 드리프트.** C-1에서 5건이 실제로 발생했고, 설계 문서만 읽어서는 발견되지 않았다 | 높음 | 컬럼 단위 권위를 `db-contract.md`로 이관. 기동 시 fail-closed 검증(계약 §3 V-01~V-12)으로 런타임에서 재확인 | §9·§17.2·§19.1은 물리 스키마가 없어 아직 대조 불가. `TW_` DDL 작성 시 동일 방식으로 재검증 필요 |
 | R-11 | 원격 저장소 미구성으로 백업·협업 경로 없음 | 중간 | 로컬 저장소 유지, 승인 시 즉시 구성 | 로컬 디스크 장애 시 산출물 소실 |
 
 ---

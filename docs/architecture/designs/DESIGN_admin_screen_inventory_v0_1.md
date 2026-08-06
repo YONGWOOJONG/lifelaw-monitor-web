@@ -5,7 +5,7 @@ Status: PROPOSAL
 Authority: ADVISORY
 Implementation-Authority: false
 Owner: User
-Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1, APPROVED)
+Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md (v1.2, APPROVED)
 ---
 
 # 관리자 Web 화면 목록 (G-2) — v0.1
@@ -13,7 +13,7 @@ Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1, APPROVE
 > **이 문서는 `PROPOSAL`이며 구현 권위가 아니다.** 화면 목록은 API 계약의
 > 입력이므로, 이 문서가 승인되기 전에는 엔드포인트와 DTO를 확정하지 않는다.
 >
-> 상위 권위는 `DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md`이며,
+> 상위 권위는 `DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md`이며,
 > 충돌 시 상위 문서가 우선한다. 특히 승인 상태는 상위 문서 §23.1이 단일
 > 출처다.
 
