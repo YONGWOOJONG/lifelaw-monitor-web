@@ -17,17 +17,25 @@
     승인, 감사
 
 상세 설계는 이 파일에 중복해서 적지 않는다. 활성 설계 문서는
-`docs/architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md`
-(v1.0, `APPROVED`)이며, **구현 권위는 승인된 항목으로 한정된다.** 승인 상태의
-단일 출처는 해당 문서 §23.1 표다. v0.1은 `SUPERSEDED`이며 인용하지 않는다.
+`docs/architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md`
+(v1.1, `APPROVED`)이며, **구현 권위는 승인된 항목으로 한정된다.** 승인 상태의
+단일 출처는 해당 문서 §23.1 표다. v1.0과 v0.1은 `SUPERSEDED`이며 인용하지 않는다.
 
-확정된 스택과 인증 방식은 다음과 같다(2026-08-06 사용자 승인).
+2026-08-06 사용자 승인으로 확정된 사항은 다음과 같다.
 
 - 백엔드 **FastAPI(Python)** — 정책 변경 로직을 수집기와 공유 라이브러리로
   재사용하기 위한 전제이므로 언어를 바꾸지 않는다(설계 §2.1)
 - 프론트엔드 **React/TypeScript(Vite)**
 - 인증 **서버 측 세션 + 쿠키.** 동일 출처 배포, CORS 기본 비활성, CSRF 토큰
   검증, 권한은 매 요청 서버 재조회(설계 §17.4)
+- Web 소유 테이블 **`TW_` 접두사 7종.** `TW_`는 Web이 유일한 작성자이며,
+  수집기는 `TW_ADMIN_COMMAND`의 상태 전이만 수행한다(설계 §7.2)
+- **역할 6종 · 권한 14종 확정.** 권한 문자열은 코드 상수로 고정하고 임의
+  문자열을 권한으로 받지 않는다. 추가는 설계 문서 개정 사항이다(설계 §17)
+
+화면 단위 분해는 `docs/architecture/designs/DESIGN_admin_screen_inventory_v0_1.md`
+(`PROPOSAL`)를 참조한다. 화면은 명시적 등록물이며, 새 테이블이 생겨도 해당
+문서 표에 등록하지 않는 한 UI에 노출하지 않는다.
 
 ## 2. 사용자 응답 언어
 

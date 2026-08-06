@@ -6,12 +6,15 @@
 
 ## ⚠️ 현재 상태
 
-**활성 설계 문서는 v1.0 `APPROVED`이며, 구현 권위는 승인된 항목으로 한정된다.**
+**활성 설계 문서는 v1.1 `APPROVED`이며, 구현 권위는 승인된 항목으로 한정된다.**
 
-2026-08-06 사용자 승인으로 A-01(문서 승격), A-02(FastAPI + React/Vite),
-A-04(서버 측 세션 인증)가 확정됐다. 나머지 A-03·A-05~A-09는 **미승인**이며,
-해당 범위(Web 소유 `TW_*` 테이블, 역할·권한 목록, 행위자 귀속 방식, 명령 Inbox
-소비자, 아티팩트 열람 정책, 명명 규칙)는 여전히 제안 상태다.
+2026-08-06 사용자 승인으로 **A-01·A-02·A-03·A-04·A-05·A-09** 6건이 확정됐다.
+스택(FastAPI + React/Vite), 인증(서버 측 세션), Web 소유 `TW_` 테이블 7종,
+역할 6종·권한 14종, 명명 규칙이 여기 포함된다.
+
+미승인은 **A-06**(감사 행위자 귀속 — 1안이 기본 동작), **A-07**(명령 Inbox
+소비자 구현 주체), **A-08**(아티팩트 열람 정책) 3건이며, 3·4단계 조회 MVP를
+차단하지 않는다.
 
 승인 상태의 **단일 출처**는 설계 문서 §23.1 표다. 본문 다른 절과 충돌하면
 그 표가 우선한다.
@@ -23,9 +26,10 @@ A-04(서버 측 세션 인증)가 확정됐다. 나머지 A-03·A-05~A-09는 **�
 
 | 문서 | 상태 | 권위 | 내용 |
 |---|---|---|---|
-| [DESIGN_..._v1_0.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md) | **`APPROVED`** (활성) | `IMPLEMENTATION` (`Implementation-Authority=true`, 승인 항목 한정) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 세션 인증, 감사, 단계별 구현 계획 |
+| [DESIGN_..._v1_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md) | **`APPROVED`** (활성) | `IMPLEMENTATION` (`Implementation-Authority=true`, 승인 항목 한정) | 관리자 Web 전체 아키텍처 — 저장소 분리, Shared Database Contract, 테이블 소유권, 단일 작성자 원칙, 관리 명령 Inbox, RBAC, 세션 인증, 감사, 단계별 구현 계획 |
 | [DESIGN_admin_screen_inventory_v0_1.md](architecture/designs/DESIGN_admin_screen_inventory_v0_1.md) | `PROPOSAL` | `ADVISORY` (`Implementation-Authority=false`) | 관리자 화면 목록(G-2) 21개 — 화면별 데이터 소스·권한·위험 등급·종속 승인, 화면-권한 매트릭스, 제공하지 않는 화면 금지 목록 |
-| [DESIGN_..._v0_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md) | `SUPERSEDED` | `ADVISORY` (`Implementation-Authority=false`) | 승인 이전 제안 상태 보존용 기록. 인용·구현 근거로 사용하지 않는다 |
+| [DESIGN_..._v1_0.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_0.md) | `SUPERSEDED` | `ADVISORY` | A-03·A-05·A-09 승인 이전 상태 기록 |
+| [DESIGN_..._v0_1.md](architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v0_1.md) | `SUPERSEDED` | `ADVISORY` | 최초 제안 상태 기록 |
 
 ## 권위 순서
 
@@ -47,19 +51,15 @@ A-04(서버 측 세션 인증)가 확정됐다. 나머지 A-03·A-05~A-09는 **�
 
 ## 다음 승인 대기 항목
 
-설계 문서 §23.1에 A-01 ~ A-09가 정리되어 있다. 현재 미승인 6건.
+설계 문서 §23.1이 승인 상태의 단일 출처다. 현재 미승인 3건.
 
 | # | 항목 | 막고 있는 것 |
 |---|---|---|
-| A-03 | Web 소유 테이블(`TW_*`) 신설 | 2단계 전체 (인증·RBAC·감사). 세션 저장 매체도 여기 종속 |
-| A-05 | 역할·권한 목록 확정 | 2단계 |
-| A-06 | 대상 정책 변경의 행위자 귀속 1안/2안 | DB 단독 감사 가능 여부 |
-| A-07 | 명령 Inbox 소비자 구현 주체 | 7단계 (수집기 저장소 변경 수반) |
-| A-08 | 아티팩트 열람 범위·원문 노출 정책 | 열람 화면 |
-| A-09 | 테이블 접두사·명명 규칙 | 스키마 확정 |
+| A-06 | 대상 정책 변경의 행위자 귀속 1안/2안 | 없음 — 1안(`TW_AUDIT_LOG`)이 기본 동작 |
+| A-07 | 명령 Inbox 소비자 구현 주체 | 6·7단계 (수집기 저장소 변경 수반) |
+| A-08 | 아티팩트 열람 범위·원문 노출 정책 | S-07 아티팩트 뷰어 화면 |
 
-**지금 착수 가능한 것은 1단계**(DB 계약 문서 고정 + 스키마 fail-closed 검증
-모듈)뿐이다. 어느 미승인 항목에도 종속되지 않는다.
+**1·2단계가 모두 열려 있다.** 첫 릴리스 목표는 3·4단계 조회 MVP다.
 
 ## 원격 저장소
 
