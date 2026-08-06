@@ -5,7 +5,7 @@ Status: PROPOSAL
 Authority: ADVISORY
 Implementation-Authority: false
 Owner: User
-Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1, APPROVED)
+Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md (v1.2, APPROVED)
 ---
 
 # 프로젝트 구조와 툴체인 (G-4) — v0.1
@@ -14,13 +14,13 @@ Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1, APPROVE
 > 되돌리기 비용이 큰 결정(레이아웃·의존성·마이그레이션 방식)이므로, 코드 작성
 > 전에 승인을 받는다.
 >
-> 상위 권위는 `DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md`다.
+> 상위 권위는 `DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md`다.
 
 ---
 
 ## 1. 확정 전제
 
-상위 설계 v1.1의 승인 사항에서 그대로 따라오는 것들이다.
+상위 설계 v1.2의 승인 사항에서 그대로 따라오는 것들이다.
 
 | 항목 | 값 | 근거 |
 |---|---|---|

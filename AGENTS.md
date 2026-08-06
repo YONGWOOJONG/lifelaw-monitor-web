@@ -17,9 +17,14 @@
     승인, 감사
 
 상세 설계는 이 파일에 중복해서 적지 않는다. 활성 설계 문서는
-`docs/architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md`
-(v1.1, `APPROVED`)이며, **구현 권위는 승인된 항목으로 한정된다.** 승인 상태의
-단일 출처는 해당 문서 §23.1 표다. v1.0과 v0.1은 `SUPERSEDED`이며 인용하지 않는다.
+`docs/architecture/designs/DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md`
+(v1.2, `APPROVED`)이며, **구현 권위는 승인된 항목으로 한정된다.** 승인 상태의
+단일 출처는 해당 문서 §23.1 표다. v1.1 이하 판은 모두 `SUPERSEDED`이며 인용하지
+않는다.
+
+**컬럼 단위 DB 계약의 단일 출처는 `docs/contracts/db-contract.md`다.** 설계
+문서 §7.1은 그 요약이며, 충돌 시 DDL을 직접 판독한 계약 문서가 우선한다.
+컬럼 소유권을 판단할 때 설계 요약만 보고 결정하지 않는다.
 
 2026-08-06 사용자 승인으로 확정된 사항은 다음과 같다.
 

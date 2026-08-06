@@ -5,7 +5,7 @@ Status: PROPOSAL
 Authority: ADVISORY
 Implementation-Authority: false
 Owner: User
-Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1, APPROVED)
+Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md (v1.2, APPROVED)
 ---
 
 # 저장소 간 DB 계약 (G-1) — v0.1
@@ -13,7 +13,7 @@ Depends-On: DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md (v1.1, APPROVE
 > **이 문서는 `PROPOSAL`이며 구현 권위가 아니다.** 다만 아래 §2의 스키마 사실은
 > 참조 저장소의 실제 DDL 파일을 읽어 확인한 **사실**이며, 제안과 구분한다.
 >
-> 상위 권위는 `DESIGN_lifelaw_monitor_web_admin_architecture_v1_1.md` §21이다.
+> 상위 권위는 `DESIGN_lifelaw_monitor_web_admin_architecture_v1_2.md` §21이다.
 
 ---
 
