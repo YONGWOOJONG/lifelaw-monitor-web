@@ -164,7 +164,7 @@ execution_collect_policy_cd  GENERATED ALWAYS AS (
 | `TN_BATCH_RUN.run_stat_cd` | `'6010'` | 대기 |
 | `TC_COMMON_CODE.use_yn` | `'Y'` | Web은 이 값을 바꾸지 않는다 |
 
-### 2.6 의존 코드값 — DDL seed 기준 33건
+### 2.6 의존 코드값 — DDL seed 기준 34건
 
 ```text
 CRAWL_STAT           1010 1020 1090
@@ -259,10 +259,10 @@ Web이 이 컬럼을 별도 문장으로 갱신하지 않는다.
 | V-02 | §2.8 allowlist 컬럼과 §2.9 금지 컬럼이 실제로 존재 (이름·타입) | 기동 실패 |
 | V-03 | `TN_CRAWL_TARGET`의 두 계산 컬럼이 `attgenerated='s'`(STORED GENERATED) | 기동 실패 |
 | V-04 | 계산 컬럼 수식에 `run_collect_policy_cd` 항의 유무가 §2.2와 일치 | 기동 실패 |
-| V-05 | `TC_COMMON_CODE`에 §2.6의 코드값 33건이 모두 존재하고 `use_yn='Y'` | 기동 실패 |
+| V-05 | `TC_COMMON_CODE`에 §2.6의 코드값 **34건**이 모두 존재하고 `use_yn='Y'` | 기동 실패 |
 | V-06 | `TH_CRAWL_TARGET`이 파티션 테이블(`relkind='p'`) | 기동 실패 |
 | V-07 | `TH_CRAWL_TARGET`의 조회 가능 파티션 목록 확인 | 실패 아님. 조회 가능 범위로 UI에 전달 |
-| V-08 | §2.3 CHECK 제약이 이름으로 존재 | 기동 실패 |
+| V-08 | §2.3 CHECK 제약이 **대상 테이블(`conrelid`)과 함께** 존재. 기대 7행 | 기동 실패 |
 | V-09 | 런타임 롤이 `TW_AUDIT_LOG`에 UPDATE/DELETE 권한을 **갖지 않음** | 기동 실패 |
 | V-10 | 런타임 롤의 `TN_CRAWL_TARGET` UPDATE 권한이 §2.8 컬럼으로 한정됨 | 기동 실패 |
 | V-11 | `TW_SCHEMA_MIGRATION` 최신 버전이 코드가 기대하는 버전과 일치 | 기동 실패 |
@@ -271,6 +271,16 @@ Web이 이 컬럼을 별도 문장으로 갱신하지 않는다.
 V-09·V-10은 `information_schema.column_privileges` / `table_privileges`로
 확인한다. **권한 설계가 문서에만 있고 실제로 적용되지 않은 상태를 잡아내는
 것이 목적이다.**
+
+### 3.1 검증 시 주의 — 실측에서 확인한 함정
+
+| 함정 | 내용 |
+|---|---|
+| **파티션이 CHECK 제약을 복제한다** | `conname`만으로 세면 부풀려진다. `ck_h_crawl_target_diag`는 부모 1 + 파티션 3 = 4행으로 잡혔다. 반드시 `conrelid`를 함께 지정한다 |
+| **테이블 소유자는 컬럼 단위 GRANT를 우회한다** | 수집기 소유 테이블을 Web 롤이 소유하면 §2.9 통제가 전부 무효가 된다. 소유자가 Web 롤이 **아님**을 검증 항목에 포함한다 |
+| **권한 거부 판정을 메시지 문자열로 하지 않는다** | PostgreSQL 오류 메시지는 로케일에 따라 달라진다(한국어는 "접근 권한 없음"). 종료 코드나 `SQLSTATE 42501`로 판정한다 |
+
+실행 도구: `scripts/db/verify/contract_checks.sql`
 
 참조 저장소에도 동등한 `validate_schema()` 절차가 있으므로 같은 엄격도를 유지한다.
 
