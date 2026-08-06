@@ -1,0 +1,12 @@
+{
+  "postgres": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "database": "replace_with_c_database_name"
+  },
+  "artifact_root": "replace_with_artifact_root_path",
+  "session": {
+    "idle_minutes": 30,
+    "absolute_hours": 12
+  }
+}
