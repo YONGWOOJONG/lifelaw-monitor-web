@@ -27,8 +27,11 @@ import {
   LinkScreen,
   SitePolicyScreen,
 } from './screens/ReferenceScreens'
+import { AuditScreen } from './screens/AuditScreen'
+import { RoleScreen } from './screens/RoleScreen'
 import { TargetDetailScreen } from './screens/TargetDetailScreen'
 import { TargetListScreen } from './screens/TargetListScreen'
+import { UserScreen } from './screens/UserScreen'
 
 interface NavItem {
   to: string
@@ -47,6 +50,12 @@ const NAV: NavItem[] = [
   { to: '/links', label: 'R 마스터', group: '기준정보', permission: 'target:read' },
   { to: '/codes', label: '공통 코드', group: '기준정보', permission: 'target:read' },
   { to: '/status', label: '계약 상태', group: '기준정보', permission: 'batch:read' },
+  // 관리 묶음은 서로 다른 권한을 쓴다. 감사 열람은 계정 관리와 분리돼 있어
+  // (설계 §5 직무 분리) ADMIN 에게는 감사 메뉴가, AUDITOR 에게는 사용자 메뉴가
+  // 보이지 않는다. 메뉴 노출은 표시일 뿐이며 인가는 서버가 한다.
+  { to: '/users', label: '사용자', group: '관리', permission: 'user:manage' },
+  { to: '/roles', label: '역할·권한', group: '관리', permission: 'user:manage' },
+  { to: '/audit', label: '감사 로그', group: '관리', permission: 'audit:read' },
 ]
 
 /** 앱바에 띄울 화면 제목. 라우팅 판단이 아니라 표시 전용이다. */
@@ -68,6 +77,9 @@ function Routes() {
   if (path === '/links') return <LinkScreen />
   if (path === '/codes') return <CodeScreen />
   if (path === '/status') return <ContractStatusScreen />
+  if (path === '/users') return <UserScreen />
+  if (path === '/roles') return <RoleScreen />
+  if (path === '/audit') return <AuditScreen />
 
   const target = matchPath('/targets/:urlId', path)
   if (target) return <TargetDetailScreen urlId={Number(target.urlId)} />

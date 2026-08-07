@@ -18,6 +18,11 @@ interface AuthValue {
   loading: boolean
   login: (loginId: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  /**
+   * 비밀번호 재확인. 최고 위험 작업은 세션 재사용이 아니라 재인증을 요구한다(§18).
+   * 성공하면 서버 세션의 `reauth_at` 이 갱신되어 몇 분간 유효하다.
+   */
+  reauth: (password: string) => Promise<void>
   refresh: () => Promise<void>
   /** 메뉴 표시 판단에만 쓴다. 인가가 아니다. */
   can: (permission: string) => boolean
@@ -54,6 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPrincipal(result.principal)
   }, [])
 
+  const reauth = useCallback(async (password: string) => {
+    await api.post<void>('/api/auth/reauth', { password })
+  }, [])
+
   const logout = useCallback(async () => {
     try {
       await api.post<void>('/api/auth/logout')
@@ -70,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ principal, loading, login, logout, refresh, can }),
-    [principal, loading, login, logout, refresh, can],
+    () => ({ principal, loading, login, logout, reauth, refresh, can }),
+    [principal, loading, login, logout, reauth, refresh, can],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
