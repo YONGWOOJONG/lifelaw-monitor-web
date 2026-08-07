@@ -16,14 +16,9 @@
  * (`CHANGE_CODES`), 기준선·상세변경·수집제외 코드, 그리고 아래 색조 표들.
  * 그 밖의 모든 한글은 `label()` 을 거친다.
  *
- * 색조는 **코드 그룹마다 다르게** 정한다.
- *   - 단계 상태(1xxx~4xxx): 끝 두 자리 규칙. 이 그룹들은 `00`·`10`·`20`·`90`
- *     네 접미만 쓰므로 규칙이 안정적이다.
- *   - `CHANGE_YN`·`RUN_STAT`: **명시 표.** 접미 규칙을 쓰면 뜻이 뒤집힌다.
- *     각 표 위 주석에 실제로 어떻게 틀렸는지 적어뒀다.
- *
- * 하나의 규칙으로 전부 덮으려 한 것이 원래 설계였고, 그게 이 화면에서 색이
- * 틀리는 유일한 원인이었다. 그룹을 나누는 쪽이 맞다.
+ * 색조와 계약 코드 상수는 **`app/tones.ts` 에서 가져온다.** 수집 대상 목록도
+ * 같은 표를 쓴다 — 두 화면이 같은 코드를 다른 색으로 그리면 색을 신뢰할 수
+ * 없게 된다. 그룹마다 규칙이 다른 이유는 그 파일 주석에 적혀 있다.
  *
  * `change_trend` 는 `target:history:read` 가 없으면 서버가 내려주지 않는다. 그 경우
  * 추이 카드를 통째로 건너뛴다 — 0 으로 채운 가짜 막대를 그리지 않는다.
@@ -36,103 +31,20 @@ import type { Dashboard } from '../api/types'
 import { useAppBar } from '../app/AppBarContext'
 import { useCodes } from '../app/CodeContext'
 import { Link } from '../app/router'
+// 색조 표는 `app/tones.ts` 한 곳에만 둔다. 여기 사본을 두면 코드가 늘 때
+// 한쪽만 고쳐져 운영 현황과 수집 대상이 같은 코드를 다른 색으로 그린다.
+import {
+  BASELINE_CODE,
+  CHANGE_CODES,
+  DETAIL_CHANGED_CODE,
+  EXCLUDED_POLICY_CODE,
+  RUN_IN_PROGRESS,
+  changeTone,
+  runTone,
+  stageTone,
+} from '../app/tones'
+import type { SegTone } from '../app/tones'
 import { CodeLabel, ErrorBanner, Loading, formatInstant, formatYmd } from '../components/common'
-
-/** 변경으로 세는 판정 코드. 계약 상수이며 `5001`(기준선)은 포함하지 않는다. */
-const CHANGE_CODES = new Set(['5020', '5040'])
-const BASELINE_CODE = '5001'
-/** 상세내용 변경됨. 알림 카드가 이 코드 하나만 걸러 보여준다. */
-const DETAIL_CHANGED_CODE = '5040'
-/** 실행 정책 "수집 제외". `excluded_cnt` 를 세는 기준과 같은 코드다. */
-const EXCLUDED_POLICY_CODE = '7020'
-
-/**
- * 막대 세그먼트에 쓸 수 있는 색조. **CSS 에 `.seg-*` 가 실재하는 값만 있다.**
- * 없는 이름이 나오면 배경 없는 투명한 구멍이 되므로 타입으로 막는다.
- */
-type SegTone = 'ok' | 'fail' | 'wait' | 'none' | 'idle' | 'baseline' | 'change' | 'change-detail'
-
-/** 실행 상태 점에 쓸 색조. `.dot-*` 가 실재하는 값만 있다. */
-type DotTone = 'ok' | 'fail' | 'wait' | 'none' | 'idle' | 'run' | 'warn' | 'change'
-
-/**
- * 단계 상태(수집·추출·정규화·비교)의 색조. 끝 두 자리 규칙이 **여기서만** 맞다.
- *
- * 이 네 그룹의 계약 코드는 `00` 비대상 · `10` 대기 · `20` 성공 · `90` 실패 뿐이며
- * `30`·`40` 은 아예 쓰이지 않는다. 그래서 규칙이 안정적이다 — 같은 단계에 코드가
- * 늘어도 접미가 뜻을 유지한다.
- *
- * 모르는 접미는 `idle` 로 떨어뜨린다. **없는 CSS 클래스로 떨어지면 안 된다.**
- */
-function stageTone(code: string): SegTone {
-  switch (code.slice(-2)) {
-    case '90':
-      return 'fail'
-    case '20':
-      return 'ok'
-    case '10':
-      return 'wait'
-    case '00':
-      return 'none'
-    default:
-      return 'idle'
-  }
-}
-
-/**
- * 변경 판정(CHANGE_YN)의 색조. **접미 규칙을 쓰지 않는다.**
- *
- * 접미 규칙을 이 그룹에 적용하면 뜻이 뒤집힌다. 실측으로 확인한 것:
- *   - `5030`(상세내용 변경없음) → `30` → 'run' → `.seg-run` 이 CSS 에 없어
- *     막대에 투명한 구멍이 났다. 시드에 8건 있어 눈에 바로 보였다.
- *   - `5010`(변경없음) → `10` → 'wait' → 아무도 기다리지 않는데 "대기" 회색.
- *
- * 그래서 명시 표로 둔다. 표의 길이가 6줄이라는 게 규칙보다 나은 이유다 —
- * 코드가 늘면 여기서 실패하고, 규칙이면 조용히 틀린 색을 쓴다.
- *
- * `5020` 원본 변경과 `5040` 상세 변경은 **다른 색**이다(2a 시안). 둘을 같은
- * 파랑으로 묶으면 "무엇이 바뀌었나"가 막대에서 사라진다.
- */
-const CHANGE_TONE: Readonly<Record<string, SegTone>> = {
-  '5000': 'none', // 본문 변경 미확인 — 아직 판정 전
-  '5001': 'baseline', // 기준선 설정 — 변경 감지와 별개 지표
-  '5010': 'ok', // 변경없음 — 정상 결과다
-  '5020': 'change', // 원본 변경
-  '5030': 'ok', // 상세내용 변경없음 — 역시 정상 결과다
-  '5040': 'change-detail', // 상세내용 변경됨
-}
-
-/**
- * 실행 상태(RUN_STAT)의 색조. 이것도 접미 규칙이 맞지 않는다.
- *
- * `6020`(실행 중) → `20` → 'ok' 초록, `6030`(정상 종료) → `30` → 'run' 파랑으로
- * **둘이 서로 뒤바뀌어** 있었다. 돌고 있는 배치가 완료처럼, 끝난 배치가 진행
- * 중처럼 보였다.
- */
-const RUN_TONE: Readonly<Record<string, DotTone>> = {
-  '6010': 'wait', // 실행 대기
-  '6020': 'run', // 실행 중
-  '6030': 'ok', // 정상 종료
-  '6040': 'warn', // 부분 성공
-  '6080': 'idle', // 취소
-  '6090': 'fail', // 실패/중단
-}
-
-/**
- * 아직 끝나지 않은 실행. **`ended_at` 이 비었는지로 판단하지 않는다.**
- *
- * `ended_at` 을 쓰지 못하고 죽은 실행은 영원히 "진행 중"으로 남는다. 실행
- * 상태의 권위 있는 값은 `run_stat_cd` 이고, 그 최종 작성자는 수집기다.
- */
-const RUN_IN_PROGRESS: ReadonlySet<string> = new Set(['6010', '6020'])
-
-function changeTone(code: string): SegTone {
-  return CHANGE_TONE[code] ?? 'idle'
-}
-
-function runTone(code: string): DotTone {
-  return RUN_TONE[code] ?? 'idle'
-}
 
 function sum(counts: Record<string, number>): number {
   return Object.values(counts).reduce((acc, n) => acc + n, 0)
