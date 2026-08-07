@@ -165,6 +165,12 @@ def build(conn: Any, *, include_trend: bool = False) -> Dashboard:
     change_yn = _tally(conn, "change_yn_cd")
     crawl_stat = _tally(conn, "crawl_stat_cd")
 
+    # 네 단계 분포를 한 번씩만 센다. 이전 판은 extract 를 두 번 tally 했다
+    # (실패 계산용 한 번, 응답용 한 번) — 같은 값을 두 번 읽을 이유가 없다.
+    extract_stat = _tally(conn, "extract_stat_cd")
+    norm_stat = _tally(conn, "norm_stat_cd")
+    cmpr_stat = _tally(conn, "cmpr_stat_cd")
+
     # 변경 감지 = 5020 + 5040. 5001 은 더하지 않는다.
     change_detected = sum(change_yn.get(code, 0) for code in CHANGE_DETECTED_CODES)
     baseline = change_yn.get(BASELINE_CODE, 0)
@@ -184,8 +190,13 @@ def build(conn: Any, *, include_trend: bool = False) -> Dashboard:
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
+            -- 화면이 쓰는 컬럼만 고른다. **다만 고르지 않은 컬럼은 응답에
+            -- 아예 없다.** `latest_runs` 는 DTO 가 list[dict] 라 타입이 걸러주지
+            -- 못하고, 프론트의 BatchRunRow 에 필드가 선언돼 있어도 런타임에는
+            -- undefined 가 된다(fail_cnt 를 쓰려다 실제로 그렇게 깨졌다).
             SELECT run_id, batch_ymd, run_mode, run_stat_cd,
-                   started_at, ended_at, total_cnt, change_detected_cnt
+                   started_at, ended_at,
+                   total_cnt, success_cnt, fail_cnt, change_detected_cnt
               FROM tn_batch_run
              ORDER BY batch_ymd DESC, run_id DESC
              LIMIT 5
@@ -193,9 +204,17 @@ def build(conn: Any, *, include_trend: bool = False) -> Dashboard:
         )
         latest = [dict(r) for r in cur.fetchall()]
 
+    # 실패는 **세 단계 전부**다 — 화면 목록 S-03 이 "1090 / 2090 / 3090" 으로
+    # 명시한다. 정규화(3090)를 빼고 세면 헤드라인 숫자와 그 아래 코드 목록이
+    # 어긋난다(실측: 목록 48 vs 헤드라인 40). 비교 단계에는 90 코드가 없다.
     failed = sum(
-        crawl_stat.get(code, 0) for code in ("1090",)
-    ) + sum(_tally(conn, "extract_stat_cd").get(code, 0) for code in ("2090",))
+        counts.get(code, 0)
+        for counts, code in (
+            (crawl_stat, "1090"),
+            (extract_stat, "2090"),
+            (norm_stat, "3090"),
+        )
+    )
 
     trend = (
         _change_trend(
@@ -211,9 +230,9 @@ def build(conn: Any, *, include_trend: bool = False) -> Dashboard:
         batch_ymd=batch_ymd,
         total_targets=total,
         crawl_stat=crawl_stat,
-        extract_stat=_tally(conn, "extract_stat_cd"),
-        norm_stat=_tally(conn, "norm_stat_cd"),
-        cmpr_stat=_tally(conn, "cmpr_stat_cd"),
+        extract_stat=extract_stat,
+        norm_stat=norm_stat,
+        cmpr_stat=cmpr_stat,
         change_yn=change_yn,
         change_detected_cnt=change_detected,
         baseline_cnt=baseline,

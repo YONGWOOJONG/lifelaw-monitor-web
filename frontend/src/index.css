@@ -901,7 +901,19 @@ code {
   background: #fdeceb;
 }
 
-.section-head h2 {
+/*
+ * 관리 화면 헤더. 대시보드의 `.section-head` 와 **이름을 겹치지 않게** 따로 둔다.
+ * 겹쳐 쓰면 대시보드가 자기 레이아웃을 위해 잡아둔 `margin: 2px 0 10px` 이
+ * 관리 화면 헤더에도 걸려, 한쪽을 고치면 다른 쪽이 틀어진다.
+ */
+.screen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0.4rem;
+}
+.screen-head h2 {
   margin: 0;
 }
 
