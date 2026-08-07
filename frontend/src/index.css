@@ -504,6 +504,11 @@ code {
   padding-left: 7px;
   white-space: nowrap;
   overflow: hidden;
+  /* 표기 선택은 JS 가 실제 px 로 하지만, 글꼴 대체나 배율 때문에 어림이 조금
+     빗나갈 수 있다. 그때 글자가 중간에 뚝 끊기지 않고 `…` 로 끝나게 한다.
+     flex 항목은 min-width:0 없이는 줄지 않아 ellipsis 가 동작하지 않는다. */
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 .seg-ok {
   background: var(--ok);
