@@ -366,6 +366,36 @@ def test_dashboard_excludes_baseline_from_change_count(viewer: TestClient) -> No
     assert body["change_detected_cnt"] != body["change_detected_cnt"] + body["baseline_cnt"]
 
 
+def test_dashboard_failed_cnt_covers_all_three_stages(viewer: TestClient) -> None:
+    """실패는 1090 + 2090 + 3090 이다(화면 목록 S-03).
+
+    정규화를 빼고 세면 큰 숫자와 그 아래 코드 목록이 어긋난다. 화면이 두 값을
+    나란히 보여주므로 사용자가 바로 알아챈다.
+    """
+    body = viewer.get("/api/dashboard").json()
+    expected = (
+        body["crawl_stat"].get("1090", 0)
+        + body["extract_stat"].get("2090", 0)
+        + body["norm_stat"].get("3090", 0)
+    )
+    assert body["failed_cnt"] == expected
+    assert body["norm_stat"].get("3090", 0) > 0, "시드에 3090 이 없으면 이 회귀를 못 잡는다"
+
+
+def test_dashboard_latest_runs_carry_fail_cnt(viewer: TestClient) -> None:
+    """실행 목록이 `fail_cnt` 를 함께 내린다.
+
+    `latest_runs` 는 DTO 가 list[dict] 라 빠진 컬럼을 타입이 걸러주지 못한다.
+    프론트에 필드가 선언돼 있어도 런타임에는 undefined 가 되어 화면이 죽는다.
+    """
+    body = viewer.get("/api/dashboard").json()
+    assert body["latest_runs"]
+    for run in body["latest_runs"]:
+        assert "fail_cnt" in run
+        assert "success_cnt" in run
+        assert "total_cnt" in run
+
+
 def test_dashboard_reports_state_distributions(viewer: TestClient) -> None:
     body = viewer.get("/api/dashboard").json()
     assert body["total_targets"] >= 100

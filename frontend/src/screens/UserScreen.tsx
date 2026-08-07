@@ -145,7 +145,7 @@ export function UserScreen() {
 
   return (
     <div className="screen">
-      <div className="section-head">
+      <div className="screen-head">
         <h2>사용자</h2>
         <button type="button" className="btn-primary" onClick={() => open({ kind: 'create' })}>
           사용자 추가

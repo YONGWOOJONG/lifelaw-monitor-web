@@ -11,9 +11,14 @@
  * 이 유일한 출처다. 이 파일이 코드값을 직접 아는 곳은 두 군데뿐이며 둘 다 계약에서
  * 온 상수다: 변경 판정 코드 집합(`CHANGE_CODES`)과 색조를 정하는 접미 두 자리 규칙.
  *
- * 색조 규칙(`toneOf`): 코드값 끝 두 자리가 계약상 단계 결과를 뜻한다.
- *   `00` 비대상 · `10` 대기 · `20`·`40` 성공/완료 · `30` 진행중 · `90` 실패
- * 코드가 늘어나도 매핑 표를 고칠 필요가 없도록 값을 열거하지 않고 규칙으로 쓴다.
+ * 색조는 **코드 그룹마다 다르게** 정한다.
+ *   - 단계 상태(1xxx~4xxx): 끝 두 자리 규칙. 이 그룹들은 `00`·`10`·`20`·`90`
+ *     네 접미만 쓰므로 규칙이 안정적이다.
+ *   - `CHANGE_YN`·`RUN_STAT`: **명시 표.** 접미 규칙을 쓰면 뜻이 뒤집힌다.
+ *     각 표 위 주석에 실제로 어떻게 틀렸는지 적어뒀다.
+ *
+ * 하나의 규칙으로 전부 덮으려 한 것이 원래 설계였고, 그게 이 화면에서 색이
+ * 틀리는 유일한 원인이었다. 그룹을 나누는 쪽이 맞다.
  *
  * 서버에 아직 없는 것:
  *   - `change_trend` (최근 업무일별 변경 감지 추이). 내려오면 추이 카드를 그리고,
@@ -35,18 +40,30 @@ const BASELINE_CODE = '5001'
 /** 실행 정책 "수집 제외". `excluded_cnt` 를 세는 기준과 같은 코드다. */
 const EXCLUDED_POLICY_CODE = '7020'
 
-type Tone = 'ok' | 'fail' | 'wait' | 'none' | 'run' | 'idle'
+/**
+ * 막대 세그먼트에 쓸 수 있는 색조. **CSS 에 `.seg-*` 가 실재하는 값만 있다.**
+ * 없는 이름이 나오면 배경 없는 투명한 구멍이 되므로 타입으로 막는다.
+ */
+type SegTone = 'ok' | 'fail' | 'wait' | 'none' | 'idle' | 'baseline' | 'change' | 'change-detail'
 
-/** 코드값 끝 두 자리로 색조를 정한다. 위 주석의 규칙 참조. */
-function toneOf(code: string): Tone {
+/** 실행 상태 점에 쓸 색조. `.dot-*` 가 실재하는 값만 있다. */
+type DotTone = 'ok' | 'fail' | 'wait' | 'none' | 'idle' | 'run' | 'warn' | 'change'
+
+/**
+ * 단계 상태(수집·추출·정규화·비교)의 색조. 끝 두 자리 규칙이 **여기서만** 맞다.
+ *
+ * 이 네 그룹의 계약 코드는 `00` 비대상 · `10` 대기 · `20` 성공 · `90` 실패 뿐이며
+ * `30`·`40` 은 아예 쓰이지 않는다. 그래서 규칙이 안정적이다 — 같은 단계에 코드가
+ * 늘어도 접미가 뜻을 유지한다.
+ *
+ * 모르는 접미는 `idle` 로 떨어뜨린다. **없는 CSS 클래스로 떨어지면 안 된다.**
+ */
+function stageTone(code: string): SegTone {
   switch (code.slice(-2)) {
     case '90':
       return 'fail'
     case '20':
-    case '40':
       return 'ok'
-    case '30':
-      return 'run'
     case '10':
       return 'wait'
     case '00':
@@ -54,6 +71,61 @@ function toneOf(code: string): Tone {
     default:
       return 'idle'
   }
+}
+
+/**
+ * 변경 판정(CHANGE_YN)의 색조. **접미 규칙을 쓰지 않는다.**
+ *
+ * 접미 규칙을 이 그룹에 적용하면 뜻이 뒤집힌다. 실측으로 확인한 것:
+ *   - `5030`(상세내용 변경없음) → `30` → 'run' → `.seg-run` 이 CSS 에 없어
+ *     막대에 투명한 구멍이 났다. 시드에 8건 있어 눈에 바로 보였다.
+ *   - `5010`(변경없음) → `10` → 'wait' → 아무도 기다리지 않는데 "대기" 회색.
+ *
+ * 그래서 명시 표로 둔다. 표의 길이가 6줄이라는 게 규칙보다 나은 이유다 —
+ * 코드가 늘면 여기서 실패하고, 규칙이면 조용히 틀린 색을 쓴다.
+ *
+ * `5020` 원본 변경과 `5040` 상세 변경은 **다른 색**이다(2a 시안). 둘을 같은
+ * 파랑으로 묶으면 "무엇이 바뀌었나"가 막대에서 사라진다.
+ */
+const CHANGE_TONE: Readonly<Record<string, SegTone>> = {
+  '5000': 'none', // 본문 변경 미확인 — 아직 판정 전
+  '5001': 'baseline', // 기준선 설정 — 변경 감지와 별개 지표
+  '5010': 'ok', // 변경없음 — 정상 결과다
+  '5020': 'change', // 원본 변경
+  '5030': 'ok', // 상세내용 변경없음 — 역시 정상 결과다
+  '5040': 'change-detail', // 상세내용 변경됨
+}
+
+/**
+ * 실행 상태(RUN_STAT)의 색조. 이것도 접미 규칙이 맞지 않는다.
+ *
+ * `6020`(실행 중) → `20` → 'ok' 초록, `6030`(정상 종료) → `30` → 'run' 파랑으로
+ * **둘이 서로 뒤바뀌어** 있었다. 돌고 있는 배치가 완료처럼, 끝난 배치가 진행
+ * 중처럼 보였다.
+ */
+const RUN_TONE: Readonly<Record<string, DotTone>> = {
+  '6010': 'wait', // 실행 대기
+  '6020': 'run', // 실행 중
+  '6030': 'ok', // 정상 종료
+  '6040': 'warn', // 부분 성공
+  '6080': 'idle', // 취소
+  '6090': 'fail', // 실패/중단
+}
+
+/**
+ * 아직 끝나지 않은 실행. **`ended_at` 이 비었는지로 판단하지 않는다.**
+ *
+ * `ended_at` 을 쓰지 못하고 죽은 실행은 영원히 "진행 중"으로 남는다. 실행
+ * 상태의 권위 있는 값은 `run_stat_cd` 이고, 그 최종 작성자는 수집기다.
+ */
+const RUN_IN_PROGRESS: ReadonlySet<string> = new Set(['6010', '6020'])
+
+function changeTone(code: string): SegTone {
+  return CHANGE_TONE[code] ?? 'idle'
+}
+
+function runTone(code: string): DotTone {
+  return RUN_TONE[code] ?? 'idle'
 }
 
 function sum(counts: Record<string, number>): number {
@@ -81,14 +153,22 @@ function Metric({ label, value, tone }: { label: string; value: number; tone?: '
   )
 }
 
-/** 단계별 누적 막대 한 줄. 세그먼트 라벨은 코드값 + 건수로, 이름은 툴팁에 둔다. */
+/**
+ * 단계별 누적 막대 한 줄. 세그먼트 라벨은 코드값 + 건수로, 이름은 툴팁에 둔다.
+ *
+ * 색조 함수를 **호출부가 넘긴다.** 막대 안에서 코드값을 보고 그룹을 추측하면
+ * (`5`로 시작하면 변경 판정…) 그 추측이 또 하나의 규칙이 되고, 규칙이 틀리는
+ * 것이 애초의 문제였다. 어느 그룹을 그리는지는 호출부가 이미 알고 있다.
+ */
 function StageBar({
   name,
   counts,
+  tone,
   summary,
 }: {
   name: string
   counts: Record<string, number>
+  tone: (code: string) => SegTone
   summary?: boolean
 }) {
   const entries = sorted(counts)
@@ -100,14 +180,13 @@ function StageBar({
       <div className="dist-name">{name}</div>
       <div className="stack">
         {entries.map(([code, count]) => {
-          const tone = code === BASELINE_CODE ? 'baseline' : CHANGE_CODES.has(code) ? 'change' : toneOf(code)
           const width = pct(count, total)
           // 좁은 세그먼트는 글자를 빼고 색만 남긴다. 잘린 숫자가 더 나쁘다.
           const wide = count / total > 0.09
           return (
             <div
               key={code}
-              className={`seg seg-${tone}`}
+              className={`seg seg-${tone(code)}`}
               style={{ width }}
               title={`${code} ${count.toLocaleString('ko-KR')}건`}
             >
@@ -191,9 +270,15 @@ function Alert({
   )
 }
 
+/**
+ * 실행 소요 시간. **끝난 실행에만 쓴다** — 진행 중 판단은 호출부가
+ * `RUN_IN_PROGRESS` 로 먼저 한다.
+ *
+ * 그래서 `ended_at` 이 비면 '진행 중' 이 아니라 `—` 다. 상태가 이미 종료인데
+ * 종료 시각이 없는 실행(죽은 실행)을 "진행 중"으로 부르면 안 된다.
+ */
 function duration(startedAt: string | null, endedAt: string | null): string {
-  if (!startedAt) return '—'
-  if (!endedAt) return '진행 중'
+  if (!startedAt || !endedAt) return '—'
   const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime()
   if (!Number.isFinite(ms) || ms < 0) return '—'
   const minutes = Math.round(ms / 60000)
@@ -208,7 +293,9 @@ export function DashboardScreen() {
     void api.get<Dashboard>('/api/dashboard').then(setData).catch(setError)
   }, [])
 
-  const running = data?.latest_runs.find((run) => !run.ended_at)
+  // `run_stat_cd` 로 판단한다. `ended_at` 이 비었는지로 보면 종료 시각을 쓰지
+  // 못하고 죽은 실행이 앱바에 영원히 "진행 중"으로 남는다.
+  const running = data?.latest_runs.find((run) => RUN_IN_PROGRESS.has(run.run_stat_cd))
 
   // 업무일자와 진행 중인 배치는 앱바가 갖는다. 어느 화면에 있든 같은 자리에 보인다.
   useAppBar(
@@ -232,9 +319,12 @@ export function DashboardScreen() {
     .filter(([code]) => CHANGE_CODES.has(code))
     .map(([code, count]) => `${code} ${count}`)
     .join(' + ')
-  const failCodes = [data.crawl_stat, data.extract_stat, data.cmpr_stat]
+  // **네 단계를 모두 센다.** `norm_stat` 을 빼면 3090 이 생겼을 때 큰 숫자
+  // (`failed_cnt`)에는 들어가는데 아래 코드 목록과 실패 카드 설명에는 안 나온다.
+  // 같은 화면에서 두 숫자가 어긋나는 종류의 버그다.
+  const failCodes = [data.crawl_stat, data.extract_stat, data.norm_stat, data.cmpr_stat]
     .flatMap((counts) => sorted(counts))
-    .filter(([code]) => toneOf(code) === 'fail')
+    .filter(([code]) => stageTone(code) === 'fail')
     .map(([code, count]) => `${code} ${count}`)
     .join(' · ')
   const detailChanged = data.change_yn['5040'] ?? 0
@@ -280,11 +370,12 @@ export function DashboardScreen() {
             <div className="card-head">
               <div className="card-title">단계별 분포</div>
             </div>
-            <StageBar name="수집" counts={data.crawl_stat} />
-            <StageBar name="추출" counts={data.extract_stat} />
-            {data.norm_stat ? <StageBar name="정규화" counts={data.norm_stat} /> : null}
-            <StageBar name="비교" counts={data.cmpr_stat} />
-            <StageBar name="변경 판정" counts={data.change_yn} summary />
+            <StageBar name="수집" counts={data.crawl_stat} tone={stageTone} />
+            <StageBar name="추출" counts={data.extract_stat} tone={stageTone} />
+            <StageBar name="정규화" counts={data.norm_stat} tone={stageTone} />
+            <StageBar name="비교" counts={data.cmpr_stat} tone={stageTone} />
+            {/* 변경 판정만 다른 표를 쓴다. 접미 규칙이 이 그룹에서 뜻을 뒤집는다. */}
+            <StageBar name="변경 판정" counts={data.change_yn} tone={changeTone} summary />
           </div>
         </div>
       </div>
@@ -339,17 +430,21 @@ export function DashboardScreen() {
           <div className="runs">
             {data.latest_runs.map((run) => (
               <Link key={run.run_id} to={`/batch-runs/${run.run_id}`} className="row">
-                <span className={`dot dot-${toneOf(run.run_stat_cd)}`} />
+                <span className={`dot dot-${runTone(run.run_stat_cd)}`} />
                 <div className="row-body">
                   <div className="row-date">{formatYmd(run.batch_ymd)}</div>
                   <div className="row-sub">
                     {run.run_mode} · <CodeLabel value={run.run_stat_cd} /> ·{' '}
-                    {run.ended_at ? duration(run.started_at, run.ended_at) : formatInstant(run.started_at)}
+                    {RUN_IN_PROGRESS.has(run.run_stat_cd)
+                      ? formatInstant(run.started_at)
+                      : duration(run.started_at, run.ended_at)}
                   </div>
                 </div>
                 <div className="row-figs">
                   <div className="a">{run.change_detected_cnt.toLocaleString('ko-KR')} 변경</div>
-                  <div className="b">{run.total_cnt.toLocaleString('ko-KR')} 대상</div>
+                  {/* 2a 원안대로 "실패"를 쓴다. 대상 수는 어느 날이나 거의 같아서
+                      한 줄을 쓸 값이 못 되고, 실패 건수는 날마다 다르다. */}
+                  <div className="b">{run.fail_cnt.toLocaleString('ko-KR')} 실패</div>
                 </div>
               </Link>
             ))}
