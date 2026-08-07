@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, buildQuery } from '../api/client'
 import type { CountResponse, PageEnvelope, SitePolicy, TargetRow } from '../api/types'
 import { useCodes } from '../app/CodeContext'
-import { Link } from '../app/router'
+import { Link, useRouter, useSearchParams } from '../app/router'
 import {
   CodeLabel,
   Empty,
@@ -46,6 +46,24 @@ const EMPTY_FILTERS: Filters = {
   has_diagnostic: '',
 }
 
+/**
+ * 쿼리스트링에서 진입 필터를 읽는다. 대시보드 알림 카드가 이 경로로 들어온다.
+ *
+ * 키 이름은 **API 파라미터와 같다.** 별칭(`diagnostic`, `excluded` 같은)을 두면
+ * 변환표가 하나 더 생기고, 그 표가 API 와 어긋나도 아무도 모른다.
+ */
+function filtersFrom(params: URLSearchParams): Filters {
+  const pick = (key: keyof Filters): string => params.get(key) ?? ''
+  return {
+    site_host: pick('site_host'),
+    link_class_cd: pick('link_class_cd'),
+    crawl_stat_cd: pick('crawl_stat_cd'),
+    change_yn_cd: pick('change_yn_cd'),
+    execution_collect_policy_cd: pick('execution_collect_policy_cd'),
+    has_diagnostic: pick('has_diagnostic'),
+  }
+}
+
 function CodeSelect({
   label,
   group,
@@ -74,7 +92,9 @@ function CodeSelect({
 }
 
 export function TargetListScreen() {
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
+  const params = useSearchParams()
+  const { navigate } = useRouter()
+  const [filters, setFilters] = useState<Filters>(() => filtersFrom(params))
   const [offset, setOffset] = useState(0)
   const [sort, setSort] = useState('url_id')
   const [page, setPage] = useState<PageEnvelope<TargetRow> | null>(null)
@@ -88,6 +108,14 @@ export function TargetListScreen() {
       .then((result) => setHosts(result.items))
       .catch(() => setHosts([]))
   }, [])
+
+  // 주소의 질의가 바뀔 때만 필터를 다시 읽는다. 화면 안에서 셀렉트를 만져도
+  // 주소는 그대로이므로, 사용자가 고른 값을 이 effect 가 덮어쓰지 않는다.
+  useEffect(() => {
+    setFilters(filtersFrom(params))
+    setOffset(0)
+    setTotal(null)
+  }, [params])
 
   const query = buildQuery({ ...filters, limit: LIMIT, offset, sort })
 
@@ -178,7 +206,17 @@ export function TargetListScreen() {
             <option value="policy">실행 정책</option>
           </select>
         </label>
-        <button type="button" onClick={() => setFilters(EMPTY_FILTERS)}>
+        <button
+          type="button"
+          onClick={() => {
+            setFilters(EMPTY_FILTERS)
+            setOffset(0)
+            setTotal(null)
+            // 질의를 달고 들어왔다면 주소도 같이 비운다. 남겨두면 새로고침했을
+            // 때 방금 지운 필터가 되살아난다.
+            if (params.toString()) navigate('/targets', { replace: true })
+          }}
+        >
           필터 초기화
         </button>
       </div>
