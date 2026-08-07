@@ -19,6 +19,7 @@ from lifelaw_web.api.security import RequestContext
 from lifelaw_web.dto.read import (
     BatchRunDetail,
     BatchRunPage,
+    ChangeTrendPointResponse,
     CommonCodeList,
     CountResponse,
     DashboardResponse,
@@ -79,8 +80,18 @@ Offset = Annotated[int, Query(ge=0)]
 
 @router.get("/dashboard", response_model=DashboardResponse)
 def get_dashboard(request: Request, conn: Annotated[Any, Depends(_db)]) -> DashboardResponse:
-    _context(request, conn, permissions.TARGET_READ)
-    data = dashboard.build(conn)
+    """S-03.
+
+    변경 감지 추이는 `TH_CRAWL_TARGET`(이력)에서 나온다. 화면 자체는
+    `target:read` 로 열리지만 이력 표는 S-06 의 것이고 `target:history:read` 가
+    따로 있다. 그래서 **추이만 별도로 가둔다** — 권한이 없으면 필드를 아예
+    빼고, 화면은 카드를 그리지 않는다. 화면 전체를 막지는 않는다.
+    """
+    context = _context(request, conn, permissions.TARGET_READ)
+    data = dashboard.build(
+        conn,
+        include_trend=context.principal.has(permissions.TARGET_HISTORY_READ),
+    )
     return DashboardResponse(
         batch_ymd=data.batch_ymd,
         total_targets=data.total_targets,
@@ -95,6 +106,18 @@ def get_dashboard(request: Request, conn: Annotated[Any, Depends(_db)]) -> Dashb
         excluded_cnt=data.excluded_cnt,
         diagnostic_cnt=data.diagnostic_cnt,
         latest_runs=[dict(r) for r in data.latest_runs],
+        change_trend=(
+            None
+            if data.change_trend is None
+            else [
+                ChangeTrendPointResponse(
+                    batch_ymd=p.batch_ymd,
+                    change_detected_cnt=p.change_detected_cnt,
+                    failed=p.failed,
+                )
+                for p in data.change_trend
+            ]
+        ),
     )
 
 

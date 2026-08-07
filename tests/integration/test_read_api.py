@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from lifelaw_web.api.app import create_app
 from lifelaw_web.auth import passwords
+from lifelaw_web.query import dashboard
 from lifelaw_web.query.paging import MAX_LIMIT
 from lifelaw_web.rbac import permissions
 from lifelaw_web.settings import Settings
@@ -372,6 +373,54 @@ def test_dashboard_reports_state_distributions(viewer: TestClient) -> None:
     assert body["excluded_cnt"] > 0
     assert body["diagnostic_cnt"] > 0
     assert body["latest_runs"]
+
+
+def test_dashboard_trend_today_matches_headline(viewer: TestClient) -> None:
+    """오늘 막대는 같은 화면의 "변경 감지" 숫자와 **반드시** 같아야 한다.
+
+    오늘 업무일은 이력에 아직 없어서 작업 테이블에서 온다. 따로 세면 두 값이
+    어긋날 수 있고, 그건 같은 화면 안에서 바로 눈에 띄는 모순이 된다.
+    """
+    body = viewer.get("/api/dashboard").json()
+    trend = body["change_trend"]
+    assert trend, "VIEWER 는 target:history:read 를 가지므로 추이가 내려와야 한다"
+
+    today = [p for p in trend if p["batch_ymd"] == body["batch_ymd"]]
+    assert len(today) == 1
+    assert today[0]["change_detected_cnt"] == body["change_detected_cnt"]
+
+
+def test_dashboard_trend_is_ascending_and_bounded(viewer: TestClient) -> None:
+    body = viewer.get("/api/dashboard").json()
+    days = [p["batch_ymd"] for p in body["change_trend"]]
+    assert days == sorted(days)
+    assert len(days) == len(set(days))
+    assert len(days) <= dashboard.TREND_DAYS
+
+
+def test_dashboard_trend_does_not_invent_days(viewer: TestClient, conn: Any) -> None:
+    """없는 업무일을 0 으로 채우지 않는다.
+
+    파티션 보존 범위 밖이라 자료가 없는 날과 변경이 0 이었던 날은 다르다.
+    """
+    body = viewer.get("/api/dashboard").json()
+    with conn.cursor() as cur:
+        cur.execute("SELECT DISTINCT batch_ymd FROM th_crawl_target")
+        known = {str(row[0]) for row in cur.fetchall()}
+    if body["batch_ymd"]:
+        known.add(body["batch_ymd"])
+
+    assert {p["batch_ymd"] for p in body["change_trend"]} <= known
+
+
+def test_dashboard_trend_omitted_without_history_permission(conn: Any) -> None:
+    """추이는 `TH_CRAWL_TARGET` 에서 나온다 — S-03 이 기본으로 읽는 표가 아니다.
+
+    권한이 없으면 빈 배열이 아니라 **필드 자체를 내리지 않는다.** 빈 배열은
+    "자료가 없다"는 뜻이라 화면이 잘못된 결론을 내린다.
+    """
+    assert dashboard.build(conn, include_trend=False).change_trend is None
+    assert dashboard.build(conn, include_trend=True).change_trend is not None
 
 
 # ---------------------------------------------------------------------------
