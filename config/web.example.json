@@ -7,6 +7,16 @@
   "artifact_root": "replace_with_artifact_root_path",
   "session": {
     "idle_minutes": 30,
-    "absolute_hours": 12
-  }
+    "absolute_hours": 12,
+    "reauth_valid_minutes": 5,
+    "cookie_name": "lifelaw_session",
+    "cookie_secure": true,
+    "cookie_samesite": "lax",
+    "max_failed_logins": 5,
+    "lockout_minutes": 15
+  },
+  "allowed_origins": [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ]
 }
