@@ -24,7 +24,7 @@ DDL_FILENAME: Final = "create_c_schema_v2_19.sql"
 DDL_SHA256: Final = "3b8fbfa14fa396b4e75996558aad2e18c6fd2c0007501d3bef37f49bfc7db9fa"
 
 # 이 코드가 기대하는 TW_ 마이그레이션 버전. 불일치 시 기동을 실패시킨다.
-EXPECTED_MIGRATION_VERSION: Final = "0001"
+EXPECTED_MIGRATION_VERSION: Final = "0002"
 
 # ---------------------------------------------------------------------------
 # 수집기 소유 테이블 (db-contract.md §2.1)

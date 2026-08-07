@@ -26,13 +26,31 @@ export class ApiError extends Error {
   readonly status: number
   readonly code: ApiErrorCode
   readonly requiredPermission?: string
+  /**
+   * 409 낙관적 잠금 충돌이 동봉한 **서버의 현재 값**.
+   *
+   * 화면은 이걸 받아 사용자가 보던 값과의 차이를 보여주고 다시 결정하게 한다.
+   * 조용히 재시도하면 방금 남이 한 변경을 덮어쓴다(§20).
+   */
+  readonly current?: unknown
 
-  constructor(status: number, code: ApiErrorCode, message: string, requiredPermission?: string) {
+  constructor(
+    status: number,
+    code: ApiErrorCode,
+    message: string,
+    requiredPermission?: string,
+    current?: unknown,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
     this.requiredPermission = requiredPermission
+    this.current = current
+  }
+
+  get isConflict(): boolean {
+    return this.status === 409
   }
 
   /** 재로그인이 필요한 상태. 권한 부족과 구분한다. */
@@ -88,17 +106,33 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const payload: unknown = text ? JSON.parse(text) : null
 
   if (!response.ok) {
-    const detail = (payload ?? {}) as {
+    const body_ = (payload ?? {}) as {
       code?: ApiErrorCode
       message?: string
-      detail?: string
+      detail?: unknown
       required_permission?: string
     }
+
+    // FastAPI 의 `detail` 은 문자열일 수도, 객체일 수도 있다. 409 충돌은 객체로
+    // { message, current } 를 담아 보낸다 — 그대로 문자열화하면 화면에
+    // "[object Object]" 가 뜬다. 실제로 그렇게 새어나가는 걸 막는 분기다.
+    let message = body_.message
+    let current: unknown
+    const detail = body_.detail
+    if (typeof detail === 'string') {
+      message ??= detail
+    } else if (detail && typeof detail === 'object') {
+      const nested = detail as { message?: string; current?: unknown }
+      message ??= nested.message
+      current = nested.current
+    }
+
     throw new ApiError(
       response.status,
-      detail.code ?? 'HTTP_ERROR',
-      detail.message ?? detail.detail ?? `요청이 실패했습니다 (${response.status})`,
-      detail.required_permission,
+      body_.code ?? 'HTTP_ERROR',
+      message ?? `요청이 실패했습니다 (${response.status})`,
+      body_.required_permission,
+      current,
     )
   }
   return payload as T
@@ -107,4 +141,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
+  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
+  // 사유를 본문으로 받아야 하므로 DELETE 에도 body 를 싣는다(§18 사유 필수).
+  del: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body),
 }

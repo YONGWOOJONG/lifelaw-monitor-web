@@ -877,3 +877,206 @@ code {
   border-color: var(--accent);
   padding: 0.5rem;
 }
+
+/* ── 관리 화면 (S-18·S-19·S-20) ─────────────────────────────────────── */
+/*
+ * 쓰기 화면이 처음 들어오면서 필요해진 규칙들이다. 기존 `.grid`/`.panel`/
+ * `.filters`/`.badge`/`.banner` 를 그대로 쓰고, 없던 것(버튼 강조, 대화상자,
+ * 태그, 체크리스트)만 더한다.
+ */
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-danger {
+  border-color: #e6b8b4;
+  color: var(--error);
+}
+.btn-danger:hover:not(:disabled) {
+  background: #fdeceb;
+}
+
+.section-head h2 {
+  margin: 0;
+}
+
+.cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+.grid tbody tr.is-off td {
+  color: var(--muted);
+}
+.grid tbody tr.is-clickable {
+  cursor: pointer;
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  background: #f5f7fa;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.perm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  max-width: 26rem;
+}
+.badge-ok {
+  border-color: #a6d5b0;
+  background: #eaf6ed;
+  color: var(--ok);
+}
+.badge-warn {
+  border-color: #e6d3a3;
+  background: #fdf6e3;
+  color: var(--warn);
+}
+.badge-error {
+  border-color: #e6b8b4;
+  background: #fdeceb;
+  color: var(--error);
+}
+
+/* 대화상자. 모든 쓰기가 여기를 지난다(설계 §18 사유 필수). */
+.modal-back {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 30, 43, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 50;
+}
+.modal {
+  background: #fff;
+  border-radius: 7px;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(23, 30, 43, 0.22);
+}
+.modal-head {
+  padding: 0.95rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+}
+.modal-body {
+  padding: 1.1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.modal-foot {
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.field > span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.field > span em {
+  color: var(--error);
+  font-style: normal;
+  font-size: 0.92em;
+}
+.field textarea {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  resize: vertical;
+}
+
+/* 영향 미리보기. 고위험 이상은 실행 전에 범위를 보여준다(§18). */
+.impact {
+  padding: 0.6rem 0.8rem;
+  border-radius: 5px;
+  border: 1px solid #e6d3a3;
+  background: #fdf6e3;
+  color: #7a5c12;
+  font-size: 0.88rem;
+}
+
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.25rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.45rem;
+}
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+.chk:hover {
+  background: #f5f7fa;
+}
+.chk.is-on {
+  background: #eef3fb;
+}
+
+.audit-reason {
+  max-width: 30rem;
+  font-size: 0.86rem;
+}
+.audit-detail {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.audit-val {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+.audit-val-label {
+  font-size: 0.74rem;
+  color: var(--muted);
+  min-width: 3.6rem;
+}
+.audit-val code {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  word-break: break-all;
+  background: #f5f7fa;
+  padding: 0.05rem 0.25rem;
+  border-radius: 3px;
+}

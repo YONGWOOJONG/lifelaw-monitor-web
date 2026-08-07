@@ -18,6 +18,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
 from lifelaw_web.api import security
+from lifelaw_web.api.routes_admin import router as admin_router
 from lifelaw_web.api.routes_auth import router as auth_router
 from lifelaw_web.api.routes_read import router as read_router
 from lifelaw_web.api.routes_status import router as status_router
@@ -145,4 +146,5 @@ def create_app(settings: Settings | None = None, *, verify_contract: bool = True
     app.include_router(auth_router)
     app.include_router(status_router)
     app.include_router(read_router)
+    app.include_router(admin_router)
     return app
