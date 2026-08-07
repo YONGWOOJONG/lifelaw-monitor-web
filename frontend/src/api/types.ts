@@ -122,6 +122,14 @@ export interface Dashboard {
   excluded_cnt: number
   diagnostic_cnt: number
   latest_runs: BatchRunRow[]
+  /**
+   * 최근 업무일별 변경 감지 추이(최대 14 업무일).
+   *
+   * 이력 표에서 나오므로 `target:history:read` 가 없으면 **필드 자체가 없다.**
+   * 없는 것(권한 없음)과 빈 배열(조회 범위에 자료 없음)은 다르지만, 화면은
+   * 둘 다 카드를 그리지 않는 것으로 같게 처리한다 — 가짜 막대를 그리지 않는다.
+   */
+  change_trend?: { batch_ymd: string; change_detected_cnt: number; failed: boolean }[]
 }
 
 export interface ContractCheck {
