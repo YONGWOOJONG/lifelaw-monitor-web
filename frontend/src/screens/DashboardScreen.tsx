@@ -29,7 +29,7 @@
  * 추이 카드를 통째로 건너뛴다 — 0 으로 채운 가짜 막대를 그리지 않는다.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { api } from '../api/client'
 import type { Dashboard } from '../api/types'
@@ -148,6 +148,42 @@ function pct(value: number, total: number): string {
   return total > 0 ? `${(value / total) * 100}%` : '0%'
 }
 
+/** `.seg` 의 padding-left(7px) + 오른쪽 여유. */
+const SEG_PADDING_PX = 11
+
+/**
+ * 글자의 렌더 폭(px) 어림. 한글은 글꼴 크기만큼, 그 밖(숫자·라틴·공백)은 그 절반쯤.
+ *
+ * **비율이 아니라 px 로 재는 이유:** 이전 판은 "막대 전체의 몇 할"로 판단했는데,
+ * 같은 비율이라도 창이 좁으면 실제 px 가 줄어든다. 1600px 에서 맞춘 계수가
+ * 1280px 에서 두 칸을 잘라냈다(실측). 칸의 실제 px 를 기준으로 삼으면 창 폭과
+ * 무관하게 판단이 맞는다.
+ */
+function textWidthPx(text: string, fontPx: number): number {
+  let width = 0
+  for (const ch of text) width += /[ᄀ-ᇿ㄰-㆏가-힣]/.test(ch) ? fontPx : fontPx * 0.55
+  return width
+}
+
+/**
+ * 세그먼트에 넣을 글자. **폭에 따라 세 단계로 물러난다.**
+ *
+ *   이름 + 건수  →  건수만  →  색만
+ *
+ * 가운데 단계가 있는 이유: 8건짜리 칸은 폭이 7% 뿐인데 이름이 "상세내용
+ * 변경없음" 처럼 길면 어떤 식으로도 안 들어간다. 그렇다고 통째로 비우면 아무
+ * 내용 없는 칸이 남는다 — 건수만이라도 보이는 쪽이 낫다. 잘라서 보여주지는
+ * 않는다(그래도 넘치면 CSS 가 `…` 로 처리한다).
+ */
+function segText(name: string, count: number, availablePx: number, fontPx = 10.5): string | null {
+  const amount = count.toLocaleString('ko-KR')
+  const room = availablePx - SEG_PADDING_PX
+  const full = `${name} ${amount}`
+  if (textWidthPx(full, fontPx) <= room) return full
+  if (textWidthPx(amount, fontPx) <= room) return amount
+  return null
+}
+
 function Metric({ label, value, tone }: { label: string; value: number; tone?: 'muted' | 'warn' }) {
   return (
     <div>
@@ -178,6 +214,21 @@ function StageBar({
   summary?: boolean
 }) {
   const { label } = useCodes()
+  // 막대의 실제 px 폭. 창 크기가 바뀌면 다시 재고 표기를 다시 고른다.
+  // 첫 렌더에는 0 이므로 그때는 색만 나오고, 관찰자가 값을 채우면 글자가 붙는다.
+  const stackRef = useRef<HTMLDivElement>(null)
+  const [stackPx, setStackPx] = useState(0)
+
+  useEffect(() => {
+    const node = stackRef.current
+    if (!node) return
+    const observer = new ResizeObserver((entries_) => {
+      setStackPx(entries_[0]?.contentRect.width ?? 0)
+    })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
   const entries = sorted(counts)
   const total = sum(counts)
   if (total === 0) return null
@@ -185,17 +236,11 @@ function StageBar({
   return (
     <div className={summary ? 'dist-row is-summary' : 'dist-row'}>
       <div className="dist-name">{name}</div>
-      <div className="stack">
+      <div className="stack" ref={stackRef}>
         {entries.map(([code, count]) => {
           const width = pct(count, total)
-          const text = `${label(code)} ${count.toLocaleString('ko-KR')}`
-          // 좁은 세그먼트는 글자를 빼고 색만 남긴다. 잘린 이름이 더 나쁘다.
-          //
-          // 임계값이 글자 수에 비례하는 이유: 코드값은 넷 다 네 자리로 같은
-          // 폭이었지만 이름은 "성공"과 "상세내용 변경없음"의 길이가 다르다.
-          // 고정 비율로 두면 긴 이름만 잘려 나간다. 계수는 10px 글꼴에서
-          // 한 글자가 차지하는 폭을 막대 전체 폭으로 나눈 어림값이다.
-          const wide = count / total > 0.015 + text.length * 0.0085
+          // 이름 → 건수 → 색만. 칸의 실제 px 에 맞는 가장 긴 표기를 고른다.
+          const text = segText(label(code), count, (count / total) * stackPx)
           return (
             <div
               key={code}
@@ -205,7 +250,7 @@ function StageBar({
               // 코드를 확인해야 하는 순간이 있다.
               title={`${code} ${label(code)} · ${count.toLocaleString('ko-KR')}건`}
             >
-              {wide ? text : null}
+              {text}
             </div>
           )
         })}
