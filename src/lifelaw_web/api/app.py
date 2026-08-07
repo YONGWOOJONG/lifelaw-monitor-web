@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 
 from lifelaw_web.api import security
 from lifelaw_web.api.routes_auth import router as auth_router
+from lifelaw_web.api.routes_read import router as read_router
 from lifelaw_web.api.routes_status import router as status_router
 from lifelaw_web.db.connection import connect
 from lifelaw_web.db.schema_check import SchemaContractError, assert_contract
@@ -143,4 +144,5 @@ def create_app(settings: Settings | None = None, *, verify_contract: bool = True
 
     app.include_router(auth_router)
     app.include_router(status_router)
+    app.include_router(read_router)
     return app
