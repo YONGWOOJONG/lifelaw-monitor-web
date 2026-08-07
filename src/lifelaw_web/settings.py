@@ -14,12 +14,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+logger = logging.getLogger("lifelaw_web.settings")
 
 PROJECT_ROOT: Final = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH: Final = PROJECT_ROOT / "config" / "web.json"
@@ -49,10 +52,24 @@ class PostgresConfig(BaseModel):
 
 
 class SessionConfig(BaseModel):
+    """세션과 쿠키 설정 (설계 §17.4).
+
+    `cookie_secure` 는 **기본이 true** 다. 로컬 개발은 http://localhost 라
+    Secure 쿠키가 전송되지 않으므로 내릴 수 있게 두되, 내린 상태로 기동하면
+    경고를 남긴다(§17.4 A안, 사용자 승인 2026-08-06). 운영에서 실수로 꺼지면
+    로그에 흔적이 남는다.
+    """
+
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     idle_minutes: int = Field(ge=1, le=24 * 60)
     absolute_hours: int = Field(ge=1, le=24 * 30)
+    reauth_valid_minutes: int = Field(default=5, ge=1, le=60)
+    cookie_name: str = Field(default="lifelaw_session", min_length=1, max_length=64)
+    cookie_secure: bool = True
+    cookie_samesite: Literal["lax", "strict"] = "lax"
+    max_failed_logins: int = Field(default=5, ge=1, le=100)
+    lockout_minutes: int = Field(default=15, ge=1, le=24 * 60)
 
 
 class WebConfig(BaseModel):
@@ -63,6 +80,10 @@ class WebConfig(BaseModel):
     postgres: PostgresConfig
     artifact_root: str = Field(min_length=1)
     session: SessionConfig
+    # 상태 변경 요청의 Origin 허용 목록. 동일 출처 배포가 전제이므로 보통
+    # 자기 오리진 하나만 둔다(설계 §17.4 강제 조항 1·2). 빈 목록이면 Origin
+    # 헤더가 있는 요청을 전부 거부한다 — 열어두는 것보다 닫아두는 쪽이 맞다.
+    allowed_origins: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -160,13 +181,35 @@ def load_secrets(env: dict[str, str] | None = None) -> Secrets:
     )
 
 
-def load_settings(
-    config_path: Path | None = None, env: dict[str, str] | None = None
-) -> Settings:
+def warn_on_weakened_security(config: WebConfig) -> list[str]:
+    """보안을 약화시킨 설정에 대해 경고 문구를 만든다.
+
+    거부하지 않는다 — 로컬 개발에는 필요한 완화다. 다만 **조용히 넘어가지
+    않는다.** 운영에서 실수로 켜져 있으면 로그에 남는다.
+    """
+    warnings: list[str] = []
+    if not config.session.cookie_secure:
+        warnings.append(
+            "session.cookie_secure=false — 세션 쿠키가 평문 HTTP 로 전송될 수 있습니다. "
+            "로컬 개발 전용 설정이며 운영에서는 반드시 true 여야 합니다."
+        )
+    if not config.allowed_origins:
+        warnings.append(
+            "allowed_origins 가 비어 있습니다 — Origin 헤더가 있는 상태 변경 요청은 "
+            "전부 거부됩니다. 브라우저에서 쓰려면 자기 오리진을 등록하세요."
+        )
+    for message in warnings:
+        logger.warning(message)
+    return warnings
+
+
+def load_settings(config_path: Path | None = None, env: dict[str, str] | None = None) -> Settings:
     """설정과 secret 을 함께 읽는다. 하나라도 실패하면 예외를 던진다."""
     resolved = config_path or DEFAULT_CONFIG_PATH
+    config = load_config(resolved)
+    warn_on_weakened_security(config)
     return Settings(
-        config=load_config(resolved),
+        config=config,
         secrets=load_secrets(env),
         config_path=resolved,
     )
