@@ -32,6 +32,8 @@ import { CodeLabel, ErrorBanner, Loading, formatInstant, formatYmd } from '../co
 /** 변경으로 세는 판정 코드. 계약 상수이며 `5001`(기준선)은 포함하지 않는다. */
 const CHANGE_CODES = new Set(['5020', '5040'])
 const BASELINE_CODE = '5001'
+/** 실행 정책 "수집 제외". `excluded_cnt` 를 세는 기준과 같은 코드다. */
+const EXCLUDED_POLICY_CODE = '7020'
 
 type Tone = 'ok' | 'fail' | 'wait' | 'none' | 'run' | 'idle'
 
@@ -304,21 +306,21 @@ export function DashboardScreen() {
               detail={failCodes || '실패 코드 없음'}
             />
             <Alert
-              to="/targets?change_yn=5040"
+              to="/targets?change_yn_cd=5040"
               tone="change"
               count={detailChanged}
               title="상세내용 변경됨"
               detail="5040 · diff 생성됨 · 검토 대기"
             />
             <Alert
-              to="/targets?diagnostic=1"
+              to="/targets?has_diagnostic=true"
               tone="warn"
               count={data.diagnostic_cnt}
               title="진단 대상"
               detail="표시만 하며 자동 교체하지 않음"
             />
             <Alert
-              to="/targets?excluded=1"
+              to={`/targets?execution_collect_policy_cd=${EXCLUDED_POLICY_CODE}`}
               tone="idle"
               count={data.excluded_cnt}
               title="수집 제외"
