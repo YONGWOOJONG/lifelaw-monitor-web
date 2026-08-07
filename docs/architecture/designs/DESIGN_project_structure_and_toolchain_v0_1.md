@@ -111,9 +111,13 @@ lifelaw-monitor-web/
 │   └── fixtures/
 └── frontend/
     ├── package.json
-    ├── vite.config.ts
+    ├── vite.config.ts          개발 프록시로 동일 출처 유지
     ├── tsconfig.json
     └── src/
+        ├── api/                fetch 래퍼, CSRF 헤더, 401/403 구분
+        ├── app/                라우터, 인증 컨텍스트, 코드 라벨 컨텍스트
+        ├── components/         공용 표시 컴포넌트
+        └── screens/            화면 단위 (S-01, S-03~S-06, S-10·S-11, S-16·S-17, S-21)
 ```
 
 참조 저장소와 같은 `src/` 레이아웃과 `tests/{unit,integration,fixtures}` 계층을
@@ -141,9 +145,28 @@ lifelaw-monitor-web/
 - 가상환경은 표준 `venv`. poetry·uv 같은 추가 도구를 도입하지 않는다
   (참조 저장소와 동일한 최소 툴체인 유지)
 
-프론트엔드는 npm + Vite 템플릿(`react-ts`)을 사용한다. **Node 26은 최신
-계열이므로 Vite 호환을 실제 설치 시점에 확인하고, 문제가 있으면 LTS로
-내린다**(§10 미결).
+프론트엔드는 npm + Vite 템플릿(`react-ts`)을 사용한다. 2026-08-07 실측으로
+Node 26.7.0 + Vite 8.2.1 + React 19.2 조합이 정상 동작함을 확인했다(T-1 해소).
+
+### 5.1 프론트엔드 의존성 — 라우터를 도입하지 않는다
+
+**결정: `react-router` 를 쓰지 않고 History API 기반 최소 라우터를 직접 둔다.**
+
+설치 시점(2026-08-07) 최신판 `react-router-dom@7.18.2` 가
+**GHSA-qwww-vcr4-c8h2**(RSC 모드 CSRF 우회, severity high) 취약 범위
+`7.12.0 – 8.2.0` 안에 있고, 그 위 패치 버전이 발행되지 않았다. 회피 가능한
+유일한 선택지는 `7.11.0` 으로 내려가는 것이었다.
+
+우리가 쓰지 않는 RSC 모드의 문제지만, CSRF 방어를 설계의 축으로 삼은
+프로젝트(§17.4)에서 알려진 high CVE 를 의존성에 넣고 시작하는 것은 맞지 않다.
+이 앱의 라우팅 요구는 **평면 경로 8개**뿐이라 `src/app/router.tsx` 약 90줄로
+충분하며, 의존성 트리와 취약점이 함께 사라진다(`npm audit` 0건).
+
+다시 검토할 조건: 중첩 라우트·데이터 로더·코드 분할 라우팅이 필요해지거나,
+패치된 `react-router` 가 나올 때.
+
+런타임 의존성은 `react` 와 `react-dom` 둘뿐이다. 정확한 버전은
+`package-lock.json` 이 고정한다.
 
 ## 6. 설정과 secret 계약
 
@@ -264,7 +287,7 @@ scripts/db/migrations/0001_create_tw_schema.sql
 
 | # | 항목 | 결정 필요 시점 |
 |---|---|---|
-| T-1 | Node 26에서 Vite/React 템플릿 정상 동작 여부. 문제 시 LTS로 하향 | 프론트 스캐폴딩 시 |
+| T-1 | ~~Node 26에서 Vite/React 템플릿 동작 여부~~ **해소** (2026-08-07) — Node 26.7.0 + Vite 8.2.1 + React 19.2 + TypeScript 6.0 으로 스캐폴딩·설치·프로덕션 빌드 모두 성공. LTS 하향 불필요 |
 | T-2 | 개발용 데이터베이스 이름(`lifelaw_c` 제안)과 수집기 스키마 적용 주체 | DB 생성 시 |
 | T-3 | 리버스 프록시 실체 (개발은 Vite proxy, 운영은 미정) | 배포 설계 시 |
 | T-4 | 로깅 형식 — 참조 저장소 D-22 로깅 baseline과 정합 필요 | 1단계 구현 시 |

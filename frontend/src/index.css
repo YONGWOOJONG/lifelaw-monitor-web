@@ -1,0 +1,362 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --line: #dfe3e8;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --accent: #1f4b99;
+  --ok: #1a7f37;
+  --warn: #9a6700;
+  --error: #b42318;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+
+code {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.85em;
+  background: #eef1f5;
+  padding: 0 0.25rem;
+  border-radius: 3px;
+}
+
+.muted {
+  color: var(--muted);
+}
+.pad {
+  padding: 1rem 0;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.sub {
+  color: var(--muted);
+  font-size: 0.85em;
+  word-break: break-all;
+}
+.url {
+  color: var(--muted);
+  word-break: break-all;
+}
+
+/* ── 셸 ─────────────────────────────────────────────────────────────── */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1.2rem;
+  background: var(--accent);
+  color: #fff;
+}
+.topbar .brand {
+  font-weight: 600;
+}
+.topbar .who {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.topbar .muted {
+  color: #cbd8ef;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 180px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 0.8rem 0;
+  display: flex;
+  flex-direction: column;
+}
+.nav-item {
+  padding: 0.5rem 1.2rem;
+  color: var(--text);
+}
+.nav-item:hover {
+  background: #eef1f5;
+  text-decoration: none;
+}
+.nav-active {
+  border-left: 3px solid var(--accent);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.content {
+  flex: 1;
+  padding: 1.2rem 1.6rem;
+  overflow-x: auto;
+}
+
+.screen h2 {
+  margin: 0 0 0.4rem;
+}
+.crumbs {
+  margin-bottom: 0.6rem;
+}
+
+/* ── 패널 ───────────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+}
+.panel h3 {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+}
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.panels .panel {
+  margin: 0;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.7rem 1.2rem;
+}
+.field-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.field-value {
+  word-break: break-all;
+}
+
+/* ── 타일 ───────────────────────────────────────────────────────────── */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.tile {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.8rem 1rem;
+}
+.tile-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.tile-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tile-hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ── 표 ─────────────────────────────────────────────────────────────── */
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+}
+.grid th,
+.grid td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.grid th {
+  background: #eef1f5;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.grid tbody tr:hover {
+  background: #fafbfc;
+}
+
+/* ── 필터·페이저 ────────────────────────────────────────────────────── */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: flex-end;
+  margin: 0.8rem 0;
+}
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.filter span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.toolbar {
+  margin: 0.4rem 0 0.8rem;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0;
+}
+
+/* ── 배지·배너 ──────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.badge-collect {
+  border-color: #a6d5b0;
+  background: #eaf6ed;
+  color: var(--ok);
+}
+.badge-excluded {
+  border-color: #e6b8b4;
+  background: #fdeceb;
+  color: var(--error);
+}
+.badge-running {
+  border-color: #b8cbe6;
+  background: #eaf1fb;
+  color: var(--accent);
+  margin-left: 0.3rem;
+}
+
+.banner {
+  padding: 0.6rem 0.9rem;
+  border-radius: 5px;
+  margin: 0.8rem 0;
+  border: 1px solid var(--line);
+}
+.banner-ok {
+  border-color: #a6d5b0;
+  background: #eaf6ed;
+  color: var(--ok);
+}
+.banner-warn {
+  border-color: #e6d3a3;
+  background: #fdf6e3;
+  color: var(--warn);
+}
+.banner-error {
+  border-color: #e6b8b4;
+  background: #fdeceb;
+  color: var(--error);
+}
+
+.hash {
+  font-size: 0.8em;
+}
+.code {
+  color: var(--muted);
+  font-size: 0.78em;
+}
+
+/* ── 로그인 ─────────────────────────────────────────────────────────── */
+
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+.login-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1.6rem;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.login-card h1 {
+  font-size: 1.05rem;
+  margin: 0 0 0.8rem;
+  text-align: center;
+}
+.login-card label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.login-card button {
+  margin-top: 0.8rem;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  padding: 0.5rem;
+}
