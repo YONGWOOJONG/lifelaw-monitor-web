@@ -69,6 +69,14 @@ class SitePolicyList(_Base):
     items: list[dict[str, Any]]
 
 
+class ChangeTrendPointResponse(_Base):
+    """추이 막대 하나. `failed` 는 그 업무일 배치가 6090 으로 끝났다는 뜻이다."""
+
+    batch_ymd: str
+    change_detected_cnt: int
+    failed: bool
+
+
 class DashboardResponse(_Base):
     batch_ymd: str | None
     total_targets: int
@@ -85,3 +93,6 @@ class DashboardResponse(_Base):
     excluded_cnt: int
     diagnostic_cnt: int
     latest_runs: list[dict[str, Any]]
+    # 생략(None)은 `target:history:read` 가 없어 집계하지 않았다는 뜻이다.
+    # 화면은 이 경우 추이 카드를 통째로 그리지 않는다 — 0 으로 채우지 않는다.
+    change_trend: list[ChangeTrendPointResponse] | None = None

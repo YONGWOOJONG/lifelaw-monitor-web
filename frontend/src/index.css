@@ -1,5 +1,13 @@
+/**
+ * 전역 스타일.
+ *
+ * 2a 시안 반영. 기존 규칙(.grid/.badge/.banner/.filters/.panel/.login-*)은
+ * 다른 화면이 그대로 쓰므로 유지한다. 셸(.shell/.topbar → .rail/.appbar)과
+ * 대시보드 전용 규칙만 바뀌거나 추가됐다.
+ */
+
 :root {
-  --bg: #f6f7f9;
+  --bg: #f1f3f6;
   --panel: #ffffff;
   --line: #dfe3e8;
   --text: #1f2328;
@@ -8,6 +16,18 @@
   --ok: #1a7f37;
   --warn: #9a6700;
   --error: #b42318;
+
+  /* 추가 */
+  --rail: #16223d;
+  --rail-text: #dbe2ef;
+  --rail-dim: #8fa3c8;
+  --rail-mark: #6d9aed;
+  --accent-soft: #eaf1fb;
+  --track: #eef1f5;
+  --idle: #c3c9d2;
+  --idle-strong: #b0b8c4;
+  --mono: Consolas, 'Courier New', monospace;
+
   color-scheme: light;
 }
 
@@ -58,9 +78,9 @@ select {
 }
 
 code {
-  font-family: Consolas, 'Courier New', monospace;
+  font-family: var(--mono);
   font-size: 0.85em;
-  background: #eef1f5;
+  background: var(--track);
   padding: 0 0.25rem;
   border-radius: 3px;
 }
@@ -90,61 +110,163 @@ code {
 .shell {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
 }
 
-.topbar {
+.rail {
+  width: 212px;
+  flex-shrink: 0;
+  background: var(--rail);
+  color: var(--rail-text);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 1.2rem;
-  background: var(--accent);
-  color: #fff;
+  flex-direction: column;
 }
-.topbar .brand {
+.rail-head {
+  padding: 17px 18px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+.rail-brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+.rail-sub {
+  font-size: 11px;
+  color: var(--rail-dim);
+  margin-top: 2px;
+}
+.rail-nav {
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+.rail-group {
+  padding: 4px 18px 7px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #6f83a8;
   font-weight: 600;
 }
-.topbar .who {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+.rail-section {
+  display: contents;
 }
-.topbar .muted {
-  color: #cbd8ef;
-}
-
-.body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.sidebar {
-  width: 180px;
-  flex-shrink: 0;
-  background: var(--panel);
-  border-right: 1px solid var(--line);
-  padding: 0.8rem 0;
-  display: flex;
-  flex-direction: column;
+.rail-section + .rail-section .rail-group {
+  padding-top: 14px;
 }
 .nav-item {
-  padding: 0.5rem 1.2rem;
-  color: var(--text);
+  padding: 8px 18px;
+  font-size: 13px;
+  color: var(--rail-text);
 }
 .nav-item:hover {
-  background: #eef1f5;
+  background: rgba(255, 255, 255, 0.05);
   text-decoration: none;
+  color: #fff;
 }
-.nav-active {
-  border-left: 3px solid var(--accent);
+.nav-active,
+.nav-active:hover {
+  padding-left: 15px;
+  color: #fff;
   font-weight: 600;
+  background: rgba(255, 255, 255, 0.09);
+  border-left: 3px solid var(--rail-mark);
+}
+.rail-foot {
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rail-foot .who {
+  color: #fff;
+}
+.rail-foot .roles {
+  color: var(--rail-dim);
+  font-size: 11px;
+  margin-top: 1px;
+}
+.rail-foot button {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--rail-dim);
+  padding: 0.2rem 0.55rem;
+  font-size: 11.5px;
+}
+.rail-foot button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 50px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.appbar h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.appbar-left {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.appbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+}
+.appbar .stamp {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.running {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid #b8cbe6;
+  border-radius: 10px;
+  padding: 2px 10px;
+}
+.running:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.running::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .content {
   flex: 1;
-  padding: 1.2rem 1.6rem;
+  padding: 18px 24px 26px;
   overflow-x: auto;
 }
 
@@ -190,7 +312,401 @@ code {
   word-break: break-all;
 }
 
-/* ── 타일 ───────────────────────────────────────────────────────────── */
+/* ── 대시보드 ───────────────────────────────────────────────────────── */
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dash-top {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 14px;
+}
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.dash-bottom {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 14px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 15px 18px 17px;
+  display: flex;
+  flex-direction: column;
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.card-note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* 오늘 지표 */
+.headline {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 3px;
+}
+.headline-value {
+  font-family: var(--mono);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.headline-value.is-change {
+  color: var(--accent);
+}
+.headline-value.is-fail {
+  color: var(--error);
+}
+.headline-label {
+  font-size: 13px;
+}
+.headline-sub {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid var(--track);
+}
+.metric-label {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.metric-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.metric-value.is-muted {
+  color: var(--muted);
+}
+.metric-value.is-warn {
+  color: var(--warn);
+}
+
+/* 추이 */
+.trend {
+  display: flex;
+  /* stretch 여야 각 열이 104px 를 갖는다. flex-end 로 두면 열이 내용 높이로
+     줄어들어 막대의 height:%% 가 기댈 기준이 사라지고 전부 3px 로 눕는다. */
+  align-items: stretch;
+  gap: 9px;
+  height: 104px;
+}
+.trend-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+/* 막대가 자랄 공간. 눈금을 뺀 나머지를 차지하며, 막대의 백분율은 이 높이를
+   기준으로 잡힌다. min-height:0 이 없으면 flex 항목이 줄지 않아 넘친다. */
+.trend-slot {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.trend-bar {
+  width: 100%;
+  min-height: 3px;
+  background: #c9d5ea;
+  border-radius: 2px 2px 0 0;
+}
+.trend-col.is-today .trend-bar {
+  background: var(--accent);
+}
+.trend-col.is-fail .trend-bar {
+  background: #e6b8b4;
+}
+.trend-tick {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #9aa1ad;
+}
+.trend-col.is-today .trend-tick {
+  color: var(--accent);
+  font-weight: 600;
+}
+.trend-col.is-fail .trend-tick {
+  color: var(--error);
+}
+
+/* 단계별 분포 */
+.dist-row {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+.dist-row + .dist-row {
+  margin-top: 11px;
+}
+.dist-row.is-summary {
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid var(--track);
+}
+.dist-name {
+  font-size: 12px;
+  color: var(--muted);
+}
+.dist-row.is-summary .dist-name {
+  color: var(--text);
+  font-weight: 600;
+}
+.stack {
+  display: flex;
+  height: 16px;
+  border-radius: 3px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #fff;
+}
+.seg {
+  display: flex;
+  align-items: center;
+  padding-left: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.seg-ok {
+  background: var(--ok);
+}
+.seg-fail {
+  background: var(--error);
+}
+.seg-wait {
+  background: var(--idle-strong);
+}
+.seg-idle {
+  background: #d5dae2;
+  color: #5b6472;
+}
+.seg-none {
+  background: var(--idle);
+  color: #4a525f;
+}
+.seg-baseline {
+  background: #9aa1ad;
+}
+.seg-change {
+  background: var(--accent);
+}
+.seg-change-detail {
+  background: #2f6bd4;
+}
+
+/* 하단 두 영역 — 제목은 흰 패널 바깥, 두 열은 같은 높이로 늘어난다 */
+.stack-col {
+  display: flex;
+  flex-direction: column;
+}
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 10px;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.section-link {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* 확인이 필요한 것 — 카드 4장이 남는 높이를 나눠 갖는다 */
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.alert {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 17px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--idle);
+  border-radius: 6px;
+  color: var(--text);
+}
+.alert:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.alert-fail {
+  border-left-color: var(--error);
+}
+.alert-change {
+  border-left-color: var(--accent);
+}
+.alert-warn {
+  border-left-color: var(--warn);
+}
+.alert-count {
+  width: 52px;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--muted);
+}
+.alert-count.is-fail {
+  color: var(--error);
+}
+.alert-count.is-change {
+  color: var(--accent);
+}
+.alert-count.is-warn {
+  color: var(--warn);
+}
+.alert-body {
+  flex: 1;
+  min-width: 0;
+}
+.alert-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.alert-detail {
+  font-size: 12px;
+  color: var(--muted);
+}
+.alert-link {
+  font-size: 12px;
+  color: var(--accent);
+  flex: none;
+}
+
+/* 최근 배치 실행 — 흰 패널 안의 행 목록 */
+.runs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--track);
+  color: var(--text);
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.row:hover {
+  text-decoration: none;
+}
+.row:hover .row-date {
+  text-decoration: underline;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot-fail {
+  background: var(--error);
+}
+.dot-change {
+  background: var(--accent);
+}
+.dot-warn {
+  background: var(--warn);
+}
+.dot-idle {
+  background: #9aa1ad;
+}
+.dot-ok {
+  background: var(--ok);
+}
+.dot-run {
+  background: var(--accent);
+}
+.dot-none {
+  background: var(--idle);
+}
+.dot-wait {
+  background: #9aa1ad;
+}
+.row-body {
+  flex: 1;
+  min-width: 0;
+}
+.row-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.row-figs {
+  text-align: right;
+  flex: none;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.row-figs .a {
+  font-size: 12.5px;
+}
+.row-figs .b {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.row-date {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--accent);
+}
+
+/* ── 타일 (다른 화면에서 계속 쓴다) ─────────────────────────────────── */
 
 .tiles {
   display: grid;
@@ -233,8 +749,9 @@ code {
   vertical-align: top;
 }
 .grid th {
-  background: #eef1f5;
+  background: var(--track);
   font-size: 0.8rem;
+  font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -292,7 +809,7 @@ code {
 }
 .badge-running {
   border-color: #b8cbe6;
-  background: #eaf1fb;
+  background: var(--accent-soft);
   color: var(--accent);
   margin-left: 0.3rem;
 }
