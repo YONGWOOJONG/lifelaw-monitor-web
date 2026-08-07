@@ -1206,26 +1206,43 @@ code {
 .grid-targets tbody tr:last-child td {
   border-bottom: 0;
 }
+/*
+ * 컬럼 폭은 **비율**이다. px 고정이었을 때는 열 개 중 아홉이 992px 로 굳어 있고
+ * 폭이 없는 `진단` 하나가 남는 공간을 전부 먹었다 — 창을 넓혀도 표는 그대로고
+ * 오른쪽 끝만 늘어났고, 좁히면 표가 넘쳤다.
+ *
+ * 합이 정확히 100% 라 어떤 창 폭에서도 넘치지 않고 모든 컬럼이 함께 늘어난다.
+ * 비율은 1440px(설계 기준 폭)에서 원래 px 배치와 거의 같게 잡고, 좁은 쪽
+ * 1280px 에서 각 컬럼이 자기 내용을 담을 수 있는지를 기준으로 조정했다.
+ *
+ *   1280px 기준 필요 폭 — 단계 "비대상" 54px · 분류 "첨부파일" 66px
+ *   변경 판정 "상세내용 변경없음" 128px · 정책 배지 둘 148px
+ *
+ * 넓힐 여유가 부족할 때 무엇을 먼저 포기하는지도 이 숫자가 정한다. 상태 컬럼이
+ * 이 화면의 목적이므로 단계·변경 판정을 먼저 채우고, `대상` 의 경로는 넘치면
+ * `…` 로 줄인다 — 전체 URL 은 툴팁에 있다.
+ */
 .grid-targets .col-target {
-  width: 276px;
+  width: 25.3%;
   padding-left: 12px;
 }
 .grid-targets .col-site {
-  width: 114px;
+  width: 9%;
 }
 .grid-targets .col-class {
-  width: 72px;
+  width: 6.6%;
 }
 .grid-targets .col-stage {
-  width: 62px;
+  width: 5.4%;
 }
 .grid-targets .col-change {
-  width: 130px;
+  width: 13%;
 }
 .grid-targets .col-policy {
-  width: 152px;
+  width: 13%;
 }
 .grid-targets .col-diag {
+  width: 11.5%;
   padding-right: 12px;
 }
 /* 네 단계를 한 묶음으로 보이게 하는 양 끝 세로선. 칸마다 선을 그으면 표가
@@ -1243,6 +1260,7 @@ code {
   border-right-color: var(--line);
 }
 
+.grid-targets .col-target,
 .grid-targets .col-site,
 .grid-targets .col-class {
   font-size: 12.5px;
