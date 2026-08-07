@@ -7,9 +7,14 @@
  * `change_detected_cnt` 와 `baseline_cnt` 를 분리해 내려주므로, 화면에서 둘을
  * 더하지 않는다. 합산하면 신규 대상이 대량 등록된 날 변경이 폭증한 것처럼 보인다.
  *
- * **한글 라벨을 하드코딩하지 않는다.** 코드 라벨은 `CodeLabel`(=`TC_COMMON_CODE`)
- * 이 유일한 출처다. 이 파일이 코드값을 직접 아는 곳은 두 군데뿐이며 둘 다 계약에서
- * 온 상수다: 변경 판정 코드 집합(`CHANGE_CODES`)과 색조를 정하는 접미 두 자리 규칙.
+ * **화면에는 코드값이 아니라 명칭을 보여준다.** 운영자가 `1090`·`5030` 을 외우고
+ * 있을 이유가 없다. 라벨의 출처는 `TC_COMMON_CODE`(`useCodes().label`) 하나뿐이며
+ * 한글을 이 파일에 하드코딩하지 않는다. 코드값은 툴팁에 남겨 두어, 계약 코드를
+ * 확인해야 할 때 볼 수 있게 한다.
+ *
+ * 이 파일이 코드값을 직접 아는 곳은 모두 계약에서 온 상수다: 변경 판정 집합
+ * (`CHANGE_CODES`), 기준선·상세변경·수집제외 코드, 그리고 아래 색조 표들.
+ * 그 밖의 모든 한글은 `label()` 을 거친다.
  *
  * 색조는 **코드 그룹마다 다르게** 정한다.
  *   - 단계 상태(1xxx~4xxx): 끝 두 자리 규칙. 이 그룹들은 `00`·`10`·`20`·`90`
@@ -20,10 +25,8 @@
  * 하나의 규칙으로 전부 덮으려 한 것이 원래 설계였고, 그게 이 화면에서 색이
  * 틀리는 유일한 원인이었다. 그룹을 나누는 쪽이 맞다.
  *
- * 서버에 아직 없는 것:
- *   - `change_trend` (최근 업무일별 변경 감지 추이). 내려오면 추이 카드를 그리고,
- *     없으면 그 카드를 통째로 건너뛴다. 가짜 데이터를 그리지 않는다.
- *   - `norm_stat` (정규화 단계 분포). 마찬가지로 있으면 한 줄 늘어난다.
+ * `change_trend` 는 `target:history:read` 가 없으면 서버가 내려주지 않는다. 그 경우
+ * 추이 카드를 통째로 건너뛴다 — 0 으로 채운 가짜 막대를 그리지 않는다.
  */
 
 import { useEffect, useState } from 'react'
@@ -31,12 +34,15 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { Dashboard } from '../api/types'
 import { useAppBar } from '../app/AppBarContext'
+import { useCodes } from '../app/CodeContext'
 import { Link } from '../app/router'
 import { CodeLabel, ErrorBanner, Loading, formatInstant, formatYmd } from '../components/common'
 
 /** 변경으로 세는 판정 코드. 계약 상수이며 `5001`(기준선)은 포함하지 않는다. */
 const CHANGE_CODES = new Set(['5020', '5040'])
 const BASELINE_CODE = '5001'
+/** 상세내용 변경됨. 알림 카드가 이 코드 하나만 걸러 보여준다. */
+const DETAIL_CHANGED_CODE = '5040'
 /** 실행 정책 "수집 제외". `excluded_cnt` 를 세는 기준과 같은 코드다. */
 const EXCLUDED_POLICY_CODE = '7020'
 
@@ -154,7 +160,7 @@ function Metric({ label, value, tone }: { label: string; value: number; tone?: '
 }
 
 /**
- * 단계별 누적 막대 한 줄. 세그먼트 라벨은 코드값 + 건수로, 이름은 툴팁에 둔다.
+ * 단계별 누적 막대 한 줄. 세그먼트에는 **명칭 + 건수**를, 툴팁에는 코드값까지 둔다.
  *
  * 색조 함수를 **호출부가 넘긴다.** 막대 안에서 코드값을 보고 그룹을 추측하면
  * (`5`로 시작하면 변경 판정…) 그 추측이 또 하나의 규칙이 되고, 규칙이 틀리는
@@ -171,6 +177,7 @@ function StageBar({
   tone: (code: string) => SegTone
   summary?: boolean
 }) {
+  const { label } = useCodes()
   const entries = sorted(counts)
   const total = sum(counts)
   if (total === 0) return null
@@ -181,16 +188,24 @@ function StageBar({
       <div className="stack">
         {entries.map(([code, count]) => {
           const width = pct(count, total)
-          // 좁은 세그먼트는 글자를 빼고 색만 남긴다. 잘린 숫자가 더 나쁘다.
-          const wide = count / total > 0.09
+          const text = `${label(code)} ${count.toLocaleString('ko-KR')}`
+          // 좁은 세그먼트는 글자를 빼고 색만 남긴다. 잘린 이름이 더 나쁘다.
+          //
+          // 임계값이 글자 수에 비례하는 이유: 코드값은 넷 다 네 자리로 같은
+          // 폭이었지만 이름은 "성공"과 "상세내용 변경없음"의 길이가 다르다.
+          // 고정 비율로 두면 긴 이름만 잘려 나간다. 계수는 10px 글꼴에서
+          // 한 글자가 차지하는 폭을 막대 전체 폭으로 나눈 어림값이다.
+          const wide = count / total > 0.015 + text.length * 0.0085
           return (
             <div
               key={code}
               className={`seg seg-${tone(code)}`}
               style={{ width }}
-              title={`${code} ${count.toLocaleString('ko-KR')}건`}
+              // 툴팁에는 코드값까지 넣는다. 화면에서 이름만 보이더라도 계약
+              // 코드를 확인해야 하는 순간이 있다.
+              title={`${code} ${label(code)} · ${count.toLocaleString('ko-KR')}건`}
             >
-              {wide ? `${code} · ${count.toLocaleString('ko-KR')}` : null}
+              {wide ? text : null}
             </div>
           )
         })}
@@ -207,13 +222,18 @@ function Trend({
   /** 대상이 하나도 없으면 서버가 `null` 을 준다. 그 경우 오늘로 표시할 열이 없다. */
   today: string | null
 }) {
+  const { label } = useCodes()
   const peak = Math.max(...points.map((p) => p.change_detected_cnt), 1)
   return (
     <div className="card">
       <div className="card-head">
         <div className="card-title">변경 감지 추이</div>
         <div className="card-note">
-          최근 {points.length} 업무일 · 막대 = {[...CHANGE_CODES].sort().join('+')}
+          최근 {points.length} 업무일 · 막대 ={' '}
+          {[...CHANGE_CODES]
+            .sort()
+            .map((code) => label(code))
+            .join(' + ')}
         </div>
       </div>
       <div className="trend">
@@ -288,6 +308,10 @@ function duration(startedAt: string | null, endedAt: string | null): string {
 export function DashboardScreen() {
   const [data, setData] = useState<Dashboard | null>(null)
   const [error, setError] = useState<unknown>(null)
+  // 코드값 대신 명칭을 보여준다. 라벨의 출처는 `TC_COMMON_CODE` 하나뿐이며
+  // 여기서 한글을 하드코딩하지 않는다. 코드를 못 찾으면 `label` 이 코드값을
+  // 그대로 돌려주므로 화면이 비지 않는다.
+  const { label } = useCodes()
 
   useEffect(() => {
     void api.get<Dashboard>('/api/dashboard').then(setData).catch(setError)
@@ -317,7 +341,7 @@ export function DashboardScreen() {
 
   const changeCodes = sorted(data.change_yn)
     .filter(([code]) => CHANGE_CODES.has(code))
-    .map(([code, count]) => `${code} ${count}`)
+    .map(([code, count]) => `${label(code)} ${count}`)
     .join(' + ')
   // **네 단계를 모두 센다.** `norm_stat` 을 빼면 3090 이 생겼을 때 큰 숫자
   // (`failed_cnt`)에는 들어가는데 아래 코드 목록과 실패 카드 설명에는 안 나온다.
@@ -325,9 +349,9 @@ export function DashboardScreen() {
   const failCodes = [data.crawl_stat, data.extract_stat, data.norm_stat, data.cmpr_stat]
     .flatMap((counts) => sorted(counts))
     .filter(([code]) => stageTone(code) === 'fail')
-    .map(([code, count]) => `${code} ${count}`)
+    .map(([code, count]) => `${label(code)} ${count}`)
     .join(' · ')
-  const detailChanged = data.change_yn['5040'] ?? 0
+  const detailChanged = data.change_yn[DETAIL_CHANGED_CODE] ?? 0
 
   return (
     <div className="dash">
@@ -344,7 +368,7 @@ export function DashboardScreen() {
             <div className="headline-label">변경 감지</div>
           </div>
           <div className="headline-sub">
-            {changeCodes || '—'} · {BASELINE_CODE} 제외
+            {changeCodes || '—'} · {label(BASELINE_CODE)} 제외
           </div>
 
           <div className="headline">
@@ -355,8 +379,10 @@ export function DashboardScreen() {
 
           <div className="metric-grid">
             <Metric label="전체 대상" value={data.total_targets} />
-            <Metric label={`기준선 ${BASELINE_CODE}`} value={data.baseline_cnt} tone="muted" />
-            <Metric label="수집 제외" value={data.excluded_cnt} />
+            {/* 지표 이름도 코드 명칭에서 가져온다. "기준선 5001" 처럼 숫자를
+                붙여 부르면 이 화면만 아는 이름이 하나 더 생긴다. */}
+            <Metric label={label(BASELINE_CODE)} value={data.baseline_cnt} tone="muted" />
+            <Metric label={label(EXCLUDED_POLICY_CODE)} value={data.excluded_cnt} />
             <Metric label="진단 대상" value={data.diagnostic_cnt} tone="warn" />
           </div>
         </div>
@@ -396,12 +422,15 @@ export function DashboardScreen() {
               title="수집 실패"
               detail={failCodes || '실패 코드 없음'}
             />
+            {/* 카드 제목도 코드 명칭을 쓴다. 설명문은 코드 라벨이 아니라 이
+                화면의 안내 문구이므로 그대로 둔다 — 하드코딩 금지 규칙은
+                코드 라벨에 대한 것이다. */}
             <Alert
-              to="/targets?change_yn_cd=5040"
+              to={`/targets?change_yn_cd=${DETAIL_CHANGED_CODE}`}
               tone="change"
               count={detailChanged}
-              title="상세내용 변경됨"
-              detail="5040 · diff 생성됨 · 검토 대기"
+              title={label(DETAIL_CHANGED_CODE)}
+              detail="diff 생성됨 · 검토 대기"
             />
             <Alert
               to="/targets?has_diagnostic=true"
@@ -414,7 +443,7 @@ export function DashboardScreen() {
               to={`/targets?execution_collect_policy_cd=${EXCLUDED_POLICY_CODE}`}
               tone="idle"
               count={data.excluded_cnt}
-              title="수집 제외"
+              title={label(EXCLUDED_POLICY_CODE)}
               detail="실행 정책 기준 · 사이트 정책 상속 포함"
             />
           </div>
