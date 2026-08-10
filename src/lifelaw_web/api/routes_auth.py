@@ -73,6 +73,10 @@ def _principal_response(
                 security.now_utc(), settings.config.session.reauth_valid_minutes
             ),
         ),
+        # 세션에서 다시 계산한다. 저장된 값을 읽는 것이 아니다.
+        csrf_token=sessions.csrf_for(
+            session.session_token_hash, settings.secrets.session_secret
+        ),
     )
 
 
@@ -135,6 +139,7 @@ def login(
         source_ip=source_ip,
         user_agent=agent,
         now=now,
+        session_secret=settings.secrets.session_secret,
     )
     principal = guard.load_principal(
         conn,

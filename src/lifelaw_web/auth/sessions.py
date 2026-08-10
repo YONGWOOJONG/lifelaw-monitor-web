@@ -14,6 +14,7 @@ DB 권한: TW_SESSION 은 SELECT/INSERT/DELETE 와 UPDATE(last_seen_at, reauth_a
 from __future__ import annotations
 
 import hashlib
+import hmac
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -28,6 +29,31 @@ def _hash_token(token: str) -> str:
 
 def new_token() -> str:
     return secrets.token_urlsafe(TOKEN_BYTES)
+
+
+def csrf_for(session_token_hash: str, session_secret: str) -> str:
+    """세션의 CSRF 토큰. **저장하지 않고 세션에서 다시 계산한다.**
+
+    난수를 발급해 해시만 저장하던 방식은 새로고침을 넘길 수 없었다. 쿠키는
+    남아 세션이 살아 있는데 원본 토큰은 브라우저 메모리에만 있었고, 서버는
+    해시만 갖고 있어 되돌려줄 수가 없었다. 그 결과 새로고침 뒤에는 비밀번호가
+    맞아도 모든 상태 변경 요청이 `CSRF_FAILED` 로 막혔다 — 재인증 자체가
+    POST 라 재인증으로 회복할 수도 없었다.
+
+    재발급으로 풀 수는 없다. `TW_SESSION` 의 UPDATE 권한이 `last_seen_at` 과
+    `reauth_at` 두 컬럼뿐이라 런타임 롤은 `csrf_token_hash` 를 갱신하지 못한다
+    (설계 §7.2 의 컬럼 단위 GRANT). 그래서 저장 대신 **유도**한다.
+
+    비밀은 `LIFELAW_WEB_SESSION_SECRET` 이다. 세션 토큰 해시만 알아도 비밀
+    없이는 계산할 수 없고, 비밀을 아는 공격자는 이미 세션을 위조할 수 있으므로
+    이 유도가 새로 열어주는 것은 없다. 세션 수명 동안 값이 고정되므로 탭을
+    여러 개 열어도 서로의 토큰을 무효화하지 않는다.
+    """
+    return hmac.new(
+        session_secret.encode("utf-8"),
+        session_token_hash.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -67,9 +93,13 @@ def create_session(
     source_ip: str | None,
     user_agent: str | None,
     now: datetime,
+    session_secret: str,
 ) -> IssuedSession:
     session_token = new_token()
-    csrf_token = new_token()
+    session_token_hash = _hash_token(session_token)
+    # 난수 대신 세션에서 유도한다. `csrf_for` 주석 참조 — 새로고침 뒤에 다시
+    # 계산할 수 있어야 한다. 저장 형태는 그대로 해시다.
+    csrf_token = csrf_for(session_token_hash, session_secret)
     expires_at = now + timedelta(hours=absolute_hours)
     with conn.cursor() as cur:
         cur.execute(
@@ -80,7 +110,7 @@ def create_session(
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                _hash_token(session_token),
+                session_token_hash,
                 user_id,
                 _hash_token(csrf_token),
                 source_ip,
