@@ -282,6 +282,53 @@ def test_state_changing_request_with_wrong_csrf_token_is_403(
     assert response.status_code == 403
 
 
+def test_me_returns_the_csrf_token_so_a_reload_can_recover(
+    client: TestClient, make_user: Any
+) -> None:
+    """새로고침 뒤에도 CSRF 토큰을 되찾을 수 있어야 한다.
+
+    회귀 방지. 토큰이 로그인 응답에만 있던 판에서는, 새로고침하면 브라우저
+    메모리의 토큰만 사라지고 세션 쿠키는 남았다. 화면은 로그인 상태로 보이는데
+    모든 상태 변경이 `CSRF_FAILED` 로 막혔고, **재인증도 POST 라 회복 경로가
+    없었다.** 실제로 "비밀번호가 맞는데 CSRF 오류"로 보고된 증상이다.
+    """
+    make_user("reload", [permissions.ADMIN])
+    login_body = login(client, "reload").json()
+
+    # 클라이언트가 토큰을 잃은 상태를 흉내낸다 — 쿠키만 남기고 /me 로 복구한다.
+    me = client.get("/api/auth/me").json()
+    assert "csrf_token" in me, "/me 가 토큰을 내리지 않으면 새로고침을 복구할 수 없다"
+
+    # 저장이 아니라 유도이므로 세션 수명 동안 같은 값이다. 탭을 여러 개 열어도
+    # 서로의 토큰을 무효화하지 않는다.
+    assert me["csrf_token"] == login_body["csrf_token"]
+
+    # 그 토큰만으로 재인증이 통과해야 한다. 여기가 막히면 최고 위험 작업이
+    # 통째로 잠긴다.
+    reauth = client.post(
+        "/api/auth/reauth",
+        json={"password": TEST_PASSWORD},
+        headers={CSRF_HEADER: me["csrf_token"]},
+    )
+    assert reauth.status_code == 200
+    assert reauth.json()["csrf_token"] == me["csrf_token"]
+
+
+def test_csrf_token_is_not_stored_in_plaintext(
+    conn: Any, client: TestClient, make_user: Any
+) -> None:
+    """유도로 바꿨어도 **저장은 여전히 해시**다.
+
+    토큰을 다시 계산할 수 있게 만든 것이 곧 평문 보관을 뜻하지는 않는다.
+    """
+    make_user("hashed", [permissions.VIEWER])
+    token = login(client, "hashed").json()["csrf_token"]
+    conn.rollback()
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM tw_session WHERE csrf_token_hash = %s", (token,))
+        assert int(cur.fetchone()[0]) == 0
+
+
 def test_read_request_does_not_need_csrf_token(client: TestClient, make_user: Any) -> None:
     make_user("readonly", [permissions.VIEWER])
     login(client, "readonly")

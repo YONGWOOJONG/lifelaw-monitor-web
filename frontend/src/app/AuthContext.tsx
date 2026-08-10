@@ -36,7 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      setPrincipal(await api.get<Principal>('/api/auth/me'))
+      const me = await api.get<Principal>('/api/auth/me')
+      // **새로고침 복구의 핵심.** CSRF 토큰은 메모리에만 있어서 새로고침하면
+      // 사라지는데 세션 쿠키는 남는다. 그러면 로그인 상태로 보이지만 모든
+      // 쓰기가 CSRF_FAILED 로 막히고, 재인증도 POST 라 풀 수가 없었다.
+      // 서버가 세션에서 토큰을 다시 계산해 내려주므로 여기서 되살린다.
+      setCsrfToken(me.csrf_token)
+      setPrincipal(me)
     } catch (error) {
       // 401 은 "아직 로그인하지 않음"이다. 오류로 표시하지 않는다.
       if (error instanceof ApiError && error.isUnauthenticated) setPrincipal(null)
@@ -60,7 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const reauth = useCallback(async (password: string) => {
-    await api.post<void>('/api/auth/reauth', { password })
+    // 응답도 Principal 이므로 토큰이 함께 온다. 재인증 성공 뒤 이어서 실행되는
+    // 쓰기 요청이 확실히 유효한 토큰을 쓰게 갱신해 둔다.
+    const refreshed = await api.post<Principal>('/api/auth/reauth', { password })
+    setCsrfToken(refreshed.csrf_token)
+    setPrincipal(refreshed)
   }, [])
 
   const logout = useCallback(async () => {

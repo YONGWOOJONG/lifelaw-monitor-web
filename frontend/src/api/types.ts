@@ -18,6 +18,12 @@ export interface Principal {
    * 설계 §17.3 — 프론트엔드의 메뉴 숨김은 인가가 아니며 서버가 매 요청 검증한다.
    */
   permissions: string[]
+  /**
+   * 세션에서 유도된 CSRF 토큰. `/api/auth/me` 가 함께 내려주므로 **새로고침
+   * 뒤에도 복구된다.** 이 값이 없으면 상태 변경 요청이 전부 CSRF_FAILED 로
+   * 막히고, 재인증도 POST 라 회복 경로가 없다.
+   */
+  csrf_token: string
   session: {
     absolute_expires_at: string
     reauth_fresh: boolean

@@ -49,6 +49,11 @@ class PrincipalResponse(BaseModel):
     roles: list[str]
     permissions: list[str]
     session: SessionInfo
+    # 세션에서 유도한 CSRF 토큰. `/me` 가 이걸 함께 내리는 이유는 **새로고침**
+    # 이다 — 쿠키는 남아 세션이 살아 있는데 원본 토큰은 브라우저 메모리에만
+    # 있었고, 그래서 새로고침 뒤에는 재인증조차 CSRF_FAILED 로 막혔다.
+    # 저장하지 않고 매번 계산하므로 세션 수명 동안 같은 값이다.
+    csrf_token: str
 
 
 class LoginResponse(BaseModel):
@@ -56,7 +61,8 @@ class LoginResponse(BaseModel):
 
     principal: PrincipalResponse
     # CSRF 토큰은 본문으로 내려주고 클라이언트가 X-CSRF-Token 헤더로 되돌려준다.
-    # 쿠키에 담지 않는다.
+    # 쿠키에 담지 않는다. `PrincipalResponse.csrf_token` 과 같은 값이며, 로그인
+    # 응답의 기존 모양을 깨지 않으려고 이 자리도 유지한다.
     csrf_token: str
 
 
