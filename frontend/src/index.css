@@ -1163,12 +1163,6 @@ code {
   padding-top: 12px;
   border-top: 1px solid var(--track);
 }
-.filterbar-foot-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 .filterbar-foot button {
   font-size: 12.5px;
   padding: 4px 11px;
@@ -1176,12 +1170,6 @@ code {
 }
 .filterbar-foot .muted {
   font-size: 12px;
-}
-.filterbar-legend {
-  font-size: 11.5px;
-}
-.filterbar-legend .stage {
-  color: var(--muted);
 }
 
 /* 표. 단계 컬럼 네 개가 붙는 만큼 폭을 고정해야 행마다 흔들리지 않는다. */

@@ -222,7 +222,7 @@ export function TargetListScreen() {
       .catch(() => setTotal(null))
   }, [filters])
 
-  // 적용 중인 필터 개수. 셀렉트가 일곱 개라 무엇이 걸려 있는지 한눈에 안 보인다.
+  // 초기화 버튼을 잠그는 데만 쓴다. 걸린 필터가 없으면 누를 이유가 없다.
   const activeCount = useMemo(
     () => Object.values(filters).filter((value) => value !== '').length,
     [filters],
@@ -312,23 +312,13 @@ export function TargetListScreen() {
         </div>
 
         <div className="filterbar-foot">
-          <div className="filterbar-foot-left">
-            {total === null ? (
-              <button type="button" onClick={loadTotal}>
-                전체 건수 조회
-              </button>
-            ) : (
-              <span className="muted">전체 {total.toLocaleString('ko-KR')}건</span>
-            )}
-            <span className="muted">
-              {activeCount === 0 ? '필터 없음' : `필터 ${activeCount}개 적용 중`} · 대용량{' '}
-              <code>COUNT</code> 를 피하려 건수는 눌러야 셉니다
-            </span>
-          </div>
-          <span className="muted filterbar-legend">
-            단계 컬럼의 <span className="stage stage-none">—</span> 는 비대상입니다. 값 없음이
-            아닙니다.
-          </span>
+          {total === null ? (
+            <button type="button" onClick={loadTotal}>
+              전체 건수 조회
+            </button>
+          ) : (
+            <span className="muted">전체 {total.toLocaleString('ko-KR')}건</span>
+          )}
         </div>
       </div>
 
